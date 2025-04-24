@@ -1,0 +1,23 @@
+@model List<ILLVentApp.Domain.Models.Hospital>
+@{
+    ViewData["Title"] = "Test Hospital Images";
+    Layout = "_Layout";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">Hospital Images Test</h2>
+    <div class="row">
+        @foreach (var hospital in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <img src="@hospital.Thumbnail" class="card-img-top" alt="@hospital.Name Thumbnail" style="height: 200px; object-fit: cover;" />
+                    <div class="card-body">
+                        <h5 class="card-title">@hospital.Name</h5>
+                        <a href="@hospital.ImageUrl" target="_blank" class="btn btn-primary">View Full Image</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div> 

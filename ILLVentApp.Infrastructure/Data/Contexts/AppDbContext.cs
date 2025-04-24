@@ -9,6 +9,7 @@ using ILLVentApp.Domain.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using ILLVentApp.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
+using System.Text.Json;
 
 namespace ILLVentApp.Infrastructure.Data.Contexts
 {
@@ -52,36 +53,6 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 					.IsUnique()
 					.HasFilter("[NormalizedEmail] IS NOT NULL");
 			});
-
-			modelBuilder.Entity<MedicalHistory>()
-				.HasMany(m => m.MedicalConditions)
-				.WithOne()
-				.HasForeignKey(mc => mc.MedicalHistoryId)
-				.OnDelete(DeleteBehavior.Cascade);
-
-			modelBuilder.Entity<MedicalHistory>()
-				.HasMany(m => m.FamilyHistory)
-				.WithOne()
-				.HasForeignKey(fh => fh.MedicalHistoryId)
-				.OnDelete(DeleteBehavior.Cascade);
-
-			modelBuilder.Entity<MedicalHistory>()
-				.HasMany(m => m.SurgicalHistories)
-				.WithOne()
-				.HasForeignKey(sh => sh.MedicalHistoryId)
-				.OnDelete(DeleteBehavior.Cascade);
-
-			modelBuilder.Entity<MedicalHistory>()
-				.HasOne(m => m.ImmunizationHistory)
-				.WithOne()
-				.HasForeignKey<ImmunizationHistory>(ih => ih.MedicalHistoryId)
-				.OnDelete(DeleteBehavior.Cascade);
-
-			modelBuilder.Entity<MedicalHistory>()
-				.HasOne(m => m.SocialHistory)
-				.WithOne()
-				.HasForeignKey<SocialHistory>(sh => sh.MedicalHistoryId)
-				.OnDelete(DeleteBehavior.Cascade);
 		}
 
 		private void ConfigureUser(ModelBuilder modelBuilder)
@@ -142,112 +113,50 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 		{
 			modelBuilder.Entity<MedicalHistory>(entity =>
 			{
-				entity.HasKey(m => m.Id);
+				entity.HasKey(m => m.MedicalHistoryId);
+				
+				// User relationship - keep as Cascade
 				entity.HasOne(m => m.User)
 					  .WithOne(u => u.MedicalHistory)
-					  .HasForeignKey<MedicalHistory>(m => m.UserId);
+					  .HasForeignKey<MedicalHistory>(m => m.UserId)
+					  .OnDelete(DeleteBehavior.Cascade);
 
-				// Basic Info
+				// One-to-many relationships - use NoAction
+				entity.HasMany(m => m.MedicalConditions)
+					  .WithOne()
+					  .HasForeignKey(mc => mc.MedicalHistoryId)
+					  .OnDelete(DeleteBehavior.NoAction);
 
-				entity.Property(m => m.Address)
-					  .IsRequired()
-					  .HasMaxLength(200);
+				entity.HasMany(m => m.FamilyHistory)
+					  .WithOne(fh => fh.MedicalHistory)
+					  .HasForeignKey(fh => fh.MedicalHistoryId)
+					  .OnDelete(DeleteBehavior.NoAction);
 
-				entity.Property(m => m.BloodType)
-					  .IsRequired()
-					  .HasMaxLength(3);
+				entity.HasMany(m => m.SurgicalHistories)
+					  .WithOne()
+					  .HasForeignKey(sh => sh.MedicalHistoryId)
+					  .OnDelete(DeleteBehavior.NoAction);
 
-				entity.Property(m => m.Age)
-					  .IsRequired();
+				// One-to-one relationships - use NoAction
+				entity.HasOne(m => m.ImmunizationHistory)
+					  .WithOne()
+					  .HasForeignKey<ImmunizationHistory>(ih => ih.MedicalHistoryId)
+					  .OnDelete(DeleteBehavior.NoAction);
 
-				entity.Property(m => m.Weight)
-					  .IsRequired()
-					  .HasColumnType("decimal(5,2)"); // For storing weight in kg with 2 decimal places
-
-				entity.Property(m => m.Height)
-					  .IsRequired()
-					  .HasColumnType("decimal(5,2)"); // For storing height in cm with 2 decimal places
-
-				entity.Property(m => m.Gender)
-					  .IsRequired()
-					  .HasMaxLength(10);
-
-				// Medical Conditions
-				entity.Property(m => m.HasHighBloodPressure)
-					  .IsRequired();
-
-				entity.Property(m => m.HasLowBloodPressure)
-					  .IsRequired();
-
-				entity.Property(m => m.HasDiabetes)
-					  .IsRequired();
-
-				entity.Property(m => m.DiabetesType)
-					  .HasMaxLength(20);
-
-				entity.Property(m => m.HasAllergies)
-					  .IsRequired();
-
-				entity.Property(m => m.AllergiesDetails)
-					  .HasMaxLength(500);
-
-				entity.Property(m => m.HasSurgeryHistory)
-					  .IsRequired();
-
-				entity.Property(m => m.BirthControlMethod)
-					  .HasMaxLength(100);
-
-				entity.Property(m => m.HasBloodTransfusionObjection)
-					  .IsRequired();
-
-				// QR Code
-				entity.Property(m => m.QrCode)
-					  .HasMaxLength(255);
-
-				entity.Property(m => m.QrCodeGeneratedAt);
-
-				entity.Property(m => m.QrCodeExpiresAt);
+				entity.HasOne(m => m.SocialHistory)
+					  .WithOne()
+					  .HasForeignKey<SocialHistory>(sh => sh.MedicalHistoryId)
+					  .OnDelete(DeleteBehavior.NoAction);
 			});
 
-			// Configure MedicalCondition
-			modelBuilder.Entity<MedicalCondition>(entity =>
+			// Configure FamilyHistory separately to handle the bidirectional relationship
+			modelBuilder.Entity<FamilyHistory>(entity =>
 			{
-				entity.HasKey(mc => mc.Id);
-				entity.Property(mc => mc.Condition)
-					  .IsRequired()
-					  .HasMaxLength(100);
-				entity.Property(mc => mc.Details)
-					  .HasMaxLength(500);
-			});
-
-			// Configure FamilyHistory
-		
-
-			// Configure SurgicalHistory
-			modelBuilder.Entity<SurgicalHistory>(entity =>
-			{
-				entity.HasKey(sh => sh.Id);
-				entity.Property(sh => sh.SurgeryType)
-					  .IsRequired()
-					  .HasMaxLength(100);
-				entity.Property(sh => sh.Details)
-					  .HasMaxLength(500);
-			});
-
-			// Configure ImmunizationHistory
-			modelBuilder.Entity<ImmunizationHistory>(entity =>
-			{
-				entity.HasKey(ih => ih.Id);
-			});
-
-			// Configure SocialHistory
-			modelBuilder.Entity<SocialHistory>(entity =>
-			{
-				entity.HasKey(sh => sh.Id);
-				entity.Property(sh => sh.ExerciseType)
-					  .HasMaxLength(50);
-				entity.Property(sh => sh.ExerciseFrequency)
-					  .HasMaxLength(50);
+				entity.HasKey(fh => fh.Id);
+				entity.HasOne(fh => fh.MedicalHistory)
+					  .WithMany(mh => mh.FamilyHistory)
+					  .HasForeignKey(fh => fh.MedicalHistoryId)
+					  .OnDelete(DeleteBehavior.NoAction);
 			});
 		}
 
@@ -279,12 +188,42 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 			modelBuilder.Entity<Hospital>(entity =>
 			{
 				entity.HasKey(h => h.HospitalId);
-				entity.Property(h => h.Name).IsRequired().HasMaxLength(100);
-				entity.Property(h => h.Description);
-				entity.Property(h => h.Latitude).IsRequired();
-				entity.Property(h => h.Longitude).IsRequired();
-				entity.Property(h => h.Phone).IsRequired().HasMaxLength(20);
-				entity.Property(h => h.HasContract).IsRequired();
+				
+				entity.Property(h => h.Name)
+					.IsRequired()
+					.HasMaxLength(100);
+
+				entity.Property(h => h.Description)
+					.HasMaxLength(500);
+
+				entity.Property(h => h.Location)
+					.IsRequired()
+					.HasMaxLength(200);
+
+				entity.Property(h => h.ContactNumber)
+					.IsRequired()
+					.HasMaxLength(20);
+
+				entity.Property(h => h.Established)
+					.HasMaxLength(50);
+
+				// Configure Specialties as a JSON column
+				entity.Property(h => h.Specialties)
+					.HasConversion(
+						v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+						v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null)
+					);
+
+				// Configure relationships
+				entity.HasMany(h => h.Ambulances)
+					.WithOne()
+					.HasForeignKey(a => a.HospitalId)
+					.OnDelete(DeleteBehavior.Cascade);
+
+				entity.HasMany(h => h.Doctors)
+					.WithOne()
+					.HasForeignKey(d => d.HospitalId)
+					.OnDelete(DeleteBehavior.Cascade);
 			});
 		}
 
@@ -312,12 +251,21 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 			modelBuilder.Entity<Pharmacy>(entity =>
 			{
 				entity.HasKey(p => p.PharmacyId);
-				entity.Property(p => p.Name).IsRequired().HasMaxLength(100);
-				entity.Property(p => p.Description);
-				entity.Property(p => p.Latitude).IsRequired();
-				entity.Property(p => p.Longitude).IsRequired();
-				entity.Property(p => p.Phone).IsRequired().HasMaxLength(20);
-				entity.Property(p => p.HasContract).IsRequired();
+				
+				entity.Property(p => p.Name)
+					.IsRequired()
+					.HasMaxLength(100);
+
+				entity.Property(p => p.Description)
+					.HasMaxLength(500);
+
+				entity.Property(p => p.Location)
+					.IsRequired()
+					.HasMaxLength(200);
+
+				entity.Property(p => p.ContactNumber)
+					.IsRequired()
+					.HasMaxLength(20);
 			});
 		}
 

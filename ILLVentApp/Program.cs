@@ -16,6 +16,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json.Serialization;
 
+
 namespace ILLVentApp
 {
     public class Program
@@ -25,12 +26,14 @@ namespace ILLVentApp
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
-            builder.Services.AddControllers()
+            builder.Services.AddControllersWithViews()
                 .AddJsonOptions(options =>
                 {
                     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
                     options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
                 });
+
+
 
             // Configure JSON response format
             builder.Services.Configure<MvcOptions>(options =>
@@ -45,6 +48,9 @@ namespace ILLVentApp
             // Add DbContext
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            // Register IAppDbContext to use AppDbContext
+            builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 
             builder.Services.AddIdentity<User, IdentityRole>(options =>
             {
@@ -94,13 +100,16 @@ namespace ILLVentApp
 
             builder.Services.AddAutoMapper(typeof(AuthProfile));
 
+            builder.Services.AddHttpContextAccessor();
+
             builder.Services
            .AddScoped<IAuthService, AuthService>()
            .AddScoped<IJwtService, JwtService>()
            .AddScoped<IEmailService, EmailService>()
            .AddScoped<IOtpService, OtpService>()
            .AddScoped<IUserFriendlyIdService, UserFriendlyIdService>()
-         
+           .AddScoped<IHospitalService, HospitalService>()
+           .AddScoped<IPharmacyService, PharmacyService>()
            .AddSingleton<IDistributedLockProvider, LocalLockProvider>()
            .AddSingleton<IRetryPolicyProvider, RetryPolicyProvider>();
 
@@ -147,14 +156,47 @@ namespace ILLVentApp
                 {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "IllVent API v1");
                 });
+                
+                // Seed data in development
+                using (var scope = app.Services.CreateScope())
+                {
+                    var serviceProvider = scope.ServiceProvider;
+                    try
+                    {
+                        ILLVentApp.Infrastructure.Data.Seeding.HospitalDataSeeder.SeedHospitalData(serviceProvider);
+                        ILLVentApp.Infrastructure.Data.Seeding.HospitalImageSeeder.SeedHospitalImages(serviceProvider);
+                        ILLVentApp.Infrastructure.Data.Seeding.PharmacyDataSeeder.SeedPharmacyData(serviceProvider);
+                        ILLVentApp.Infrastructure.Data.Seeding.PharmacyImageSeeder.SeedPharmacyImages(serviceProvider);
+                    }
+                    catch (Exception ex)
+                    {
+                        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+                        logger.LogError(ex, "An error occurred while seeding the database.");
+                    }
+                }
             }
 
             app.UseHttpsRedirection();
 
+            app.UseStaticFiles();
+
+            app.UseCors("AllowAll");
+
+            // Add routing middleware first
+            app.UseRouting();
+
+            // Then authentication and authorization
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.MapControllers();
+            // Add endpoints middleware with default MVC route
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
+                endpoints.MapControllers();
+            });
 
             app.Run();
         }

@@ -6,7 +6,7 @@ namespace ILLVentApp.Domain.Models
 {
 	public class MedicalHistory
 	{
-		public int Id { get; set; }
+		public int MedicalHistoryId { get; set; }
 		public string UserId { get; set; }
 
 		// Basic Info (Tab 1)

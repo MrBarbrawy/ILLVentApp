@@ -202,31 +202,103 @@ namespace ILLVentApp.Infrastructure.Migrations
                     b.ToTable("EmergencyRescueRequests");
                 });
 
-            modelBuilder.Entity("ILLVentApp.Domain.Models.FamilyMedicalHistory", b =>
+            modelBuilder.Entity("ILLVentApp.Domain.Models.FamilyHistory", b =>
                 {
-                    b.Property<int>("FamilyHistoryId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FamilyHistoryId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Condition")
+                    b.Property<string>("AnemiaRelationship")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Relationship")
+                    b.Property<string>("AnesthesiaReactionRelationship")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("UserId")
+                    b.Property<string>("BleedingProblemsRelationship")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("FamilyHistoryId");
+                    b.Property<string>("BloodClotsRelationship")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                    b.HasIndex("UserId");
+                    b.Property<string>("CancerPolypsRelationship")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                    b.ToTable("FamilyMedicalHistories");
+                    b.Property<string>("DiabetesRelationship")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("HasAnemia")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasAnesthesiaReaction")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasBleedingProblems")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasBloodClots")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasCancerPolyps")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasDiabetes")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasHeartDisease")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasHepatitis")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasHighBloodPressure")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasOtherCondition")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasStroke")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("HeartDiseaseRelationship")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HepatitisRelationship")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HighBloodPressureRelationship")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MedicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OtherConditionDetails")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OtherConditionRelationship")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StrokeRelationship")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MedicalHistoryId");
+
+                    b.ToTable("FamilyHistories");
                 });
 
             modelBuilder.Entity("ILLVentApp.Domain.Models.Hospital", b =>
@@ -237,15 +309,35 @@ namespace ILLVentApp.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HospitalId"));
 
-                    b.Property<string>("Description")
+                    b.Property<string>("ContactNumber")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Established")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<bool>("HasContract")
                         .HasColumnType("bit");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("bit");
+
                     b.Property<double>("Latitude")
                         .HasColumnType("float");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<double>("Longitude")
                         .HasColumnType("float");
@@ -255,10 +347,15 @@ namespace ILLVentApp.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("Phone")
+                    b.Property<double>("Rating")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Specialties")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Thumbnail")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("HospitalId");
 
@@ -267,28 +364,79 @@ namespace ILLVentApp.Infrastructure.Migrations
 
             modelBuilder.Entity("ILLVentApp.Domain.Models.ImmunizationHistory", b =>
                 {
-                    b.Property<int>("ImmunizationId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ImmunizationId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("DateAdministered")
+                    b.Property<DateTime?>("FluDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<bool>("HasFlu")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("VaccineType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("HasHepA")
+                        .HasColumnType("bit");
 
-                    b.HasKey("ImmunizationId");
+                    b.Property<bool>("HasHepB")
+                        .HasColumnType("bit");
 
-                    b.HasIndex("UserId");
+                    b.Property<bool>("HasPneumonia")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasTetanus")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("HepADate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("HepBDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MedicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PneumoniaDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("TetanusDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MedicalHistoryId")
+                        .IsUnique();
 
                     b.ToTable("ImmunizationHistories");
+                });
+
+            modelBuilder.Entity("ILLVentApp.Domain.Models.MedicalCondition", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Condition")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("MedicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MedicalHistoryId");
+
+                    b.ToTable("MedicalConditions");
                 });
 
             modelBuilder.Entity("ILLVentApp.Domain.Models.MedicalHistory", b =>
@@ -307,72 +455,62 @@ namespace ILLVentApp.Infrastructure.Migrations
                     b.Property<int>("Age")
                         .HasColumnType("int");
 
-                    b.Property<string>("Allergies")
+                    b.Property<string>("AllergiesDetails")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AspirinUsage")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("BirthControlMethod")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("BloodTransfusionObjection")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("BloodType")
                         .IsRequired()
                         .HasMaxLength(3)
                         .HasColumnType("nvarchar(3)");
 
-                    b.Property<string>("Conditions")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("DiabetesType")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Gender")
                         .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
-                    b.Property<string>("HasDiabetes")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
+                    b.Property<bool>("HasAllergies")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("HasHighBloodPressure")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
+                    b.Property<bool>("HasBloodTransfusionObjection")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("HasLowBloodPressure")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
+                    b.Property<bool>("HasDiabetes")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasHighBloodPressure")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasLowBloodPressure")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasSurgeryHistory")
+                        .HasColumnType("bit");
 
                     b.Property<decimal>("Height")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("SurName")
+                    b.Property<string>("QrCode")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
-                    b.Property<string>("SurgeryHistory")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime>("QrCodeExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("QrCodeGeneratedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -431,28 +569,39 @@ namespace ILLVentApp.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PharmacyId"));
 
-                    b.Property<string>("Description")
+                    b.Property<bool>("AcceptPrivateInsurance")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ContactNumber")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("HasContract")
                         .HasColumnType("bit");
 
-                    b.Property<double>("Latitude")
-                        .HasColumnType("float");
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<double>("Longitude")
-                        .HasColumnType("float");
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                    b.Property<double>("Rating")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Thumbnail")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("PharmacyId");
 
@@ -461,48 +610,71 @@ namespace ILLVentApp.Infrastructure.Migrations
 
             modelBuilder.Entity("ILLVentApp.Domain.Models.SocialHistory", b =>
                 {
-                    b.Property<int>("SocialHistoryId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SocialHistoryId"));
-
-                    b.Property<int>("AlcoholDrinksPerDay")
-                        .HasColumnType("int");
-
-                    b.Property<int>("AlcoholDrinksPerWeek")
-                        .HasColumnType("int");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ExerciseFrequency")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("ExerciseType")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
-                    b.Property<float>("PacksPerDay")
-                        .HasColumnType("real");
-
-                    b.Property<string>("SmokingStatus")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("YearStopped")
+                    b.Property<int>("MedicalHistoryId")
                         .HasColumnType("int");
 
-                    b.Property<int>("YearsSmoked")
+                    b.Property<int?>("PacksPerDay")
                         .HasColumnType("int");
 
-                    b.HasKey("SocialHistoryId");
+                    b.Property<int?>("YearStopped")
+                        .HasColumnType("int");
 
-                    b.HasIndex("UserId");
+                    b.Property<int?>("YearsSmoked")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MedicalHistoryId")
+                        .IsUnique();
 
                     b.ToTable("SocialHistories");
+                });
+
+            modelBuilder.Entity("ILLVentApp.Domain.Models.SurgicalHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("MedicalHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SurgeryType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MedicalHistoryId");
+
+                    b.ToTable("SurgicalHistories");
                 });
 
             modelBuilder.Entity("ILLVentApp.Domain.Models.User", b =>
@@ -818,26 +990,33 @@ namespace ILLVentApp.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ILLVentApp.Domain.Models.FamilyMedicalHistory", b =>
+            modelBuilder.Entity("ILLVentApp.Domain.Models.FamilyHistory", b =>
                 {
-                    b.HasOne("ILLVentApp.Domain.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("ILLVentApp.Domain.Models.MedicalHistory", "MedicalHistory")
+                        .WithMany("FamilyHistory")
+                        .HasForeignKey("MedicalHistoryId")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("MedicalHistory");
                 });
 
             modelBuilder.Entity("ILLVentApp.Domain.Models.ImmunizationHistory", b =>
                 {
-                    b.HasOne("ILLVentApp.Domain.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("ILLVentApp.Domain.Models.MedicalHistory", null)
+                        .WithOne("ImmunizationHistory")
+                        .HasForeignKey("ILLVentApp.Domain.Models.ImmunizationHistory", "MedicalHistoryId")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+                });
 
-                    b.Navigation("User");
+            modelBuilder.Entity("ILLVentApp.Domain.Models.MedicalCondition", b =>
+                {
+                    b.HasOne("ILLVentApp.Domain.Models.MedicalHistory", null)
+                        .WithMany("MedicalConditions")
+                        .HasForeignKey("MedicalHistoryId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ILLVentApp.Domain.Models.MedicalHistory", b =>
@@ -870,13 +1049,20 @@ namespace ILLVentApp.Infrastructure.Migrations
 
             modelBuilder.Entity("ILLVentApp.Domain.Models.SocialHistory", b =>
                 {
-                    b.HasOne("ILLVentApp.Domain.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("ILLVentApp.Domain.Models.MedicalHistory", null)
+                        .WithOne("SocialHistory")
+                        .HasForeignKey("ILLVentApp.Domain.Models.SocialHistory", "MedicalHistoryId")
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+                });
 
-                    b.Navigation("User");
+            modelBuilder.Entity("ILLVentApp.Domain.Models.SurgicalHistory", b =>
+                {
+                    b.HasOne("ILLVentApp.Domain.Models.MedicalHistory", null)
+                        .WithMany("SurgicalHistories")
+                        .HasForeignKey("MedicalHistoryId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -940,6 +1126,21 @@ namespace ILLVentApp.Infrastructure.Migrations
                     b.Navigation("Ambulances");
 
                     b.Navigation("Doctors");
+                });
+
+            modelBuilder.Entity("ILLVentApp.Domain.Models.MedicalHistory", b =>
+                {
+                    b.Navigation("FamilyHistory");
+
+                    b.Navigation("ImmunizationHistory")
+                        .IsRequired();
+
+                    b.Navigation("MedicalConditions");
+
+                    b.Navigation("SocialHistory")
+                        .IsRequired();
+
+                    b.Navigation("SurgicalHistories");
                 });
 
             modelBuilder.Entity("ILLVentApp.Domain.Models.Pharmacy", b =>
