@@ -15,6 +15,7 @@ using System.Text;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json.Serialization;
+using ILLVentApp.Application.Interfaces;
 
 
 namespace ILLVentApp
@@ -87,7 +88,7 @@ namespace ILLVentApp
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,
-                    ValidateLifetime = true,
+                    ValidateLifetime = false,
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = builder.Configuration["Jwt:Issuer"],
                     ValidAudience = builder.Configuration["Jwt:Audience"],
@@ -110,6 +111,7 @@ namespace ILLVentApp
            .AddScoped<IUserFriendlyIdService, UserFriendlyIdService>()
            .AddScoped<IHospitalService, HospitalService>()
            .AddScoped<IPharmacyService, PharmacyService>()
+           .AddScoped<IDoctorService, DoctorService>()
            .AddSingleton<IDistributedLockProvider, LocalLockProvider>()
            .AddSingleton<IRetryPolicyProvider, RetryPolicyProvider>();
 
@@ -163,10 +165,12 @@ namespace ILLVentApp
                     var serviceProvider = scope.ServiceProvider;
                     try
                     {
-                        ILLVentApp.Infrastructure.Data.Seeding.HospitalDataSeeder.SeedHospitalData(serviceProvider);
-                        ILLVentApp.Infrastructure.Data.Seeding.HospitalImageSeeder.SeedHospitalImages(serviceProvider);
-                        ILLVentApp.Infrastructure.Data.Seeding.PharmacyDataSeeder.SeedPharmacyData(serviceProvider);
-                        ILLVentApp.Infrastructure.Data.Seeding.PharmacyImageSeeder.SeedPharmacyImages(serviceProvider);
+                         ILLVentApp.Infrastructure.Data.Seeding.HospitalDataSeeder.SeedHospitalData(serviceProvider);
+                         ILLVentApp.Infrastructure.Data.Seeding.HospitalImageSeeder.SeedHospitalImages(serviceProvider);
+                         ILLVentApp.Infrastructure.Data.Seeding.PharmacyDataSeeder.SeedPharmacyData(serviceProvider);
+                         ILLVentApp.Infrastructure.Data.Seeding.PharmacyImageSeeder.SeedPharmacyImages(serviceProvider);
+                         ILLVentApp.Infrastructure.Data.Seeding.DoctorDataSeeder.SeedDoctorData(serviceProvider);
+                         ILLVentApp.Infrastructure.Data.Seeding.DoctorImageSeeder.SeedDoctorImages(serviceProvider);
                     }
                     catch (Exception ex)
                     {

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using ILLVentApp.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Text.Json;
+using ILLVentApp.Infrastructure.Data.Seeding;
 
 namespace ILLVentApp.Infrastructure.Data.Contexts
 {
@@ -24,6 +25,9 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 		public DbSet<Driver> Drivers { get; set; }
 		public DbSet<Pharmacy> Pharmacies { get; set; }
 		public DbSet<Doctor> Doctors { get; set; }
+		public DbSet<Schedule> Schedules { get; set; }
+		public DbSet<TimeSlot> TimeSlots { get; set; }
+		public DbSet<Appointment> Appointments { get; set; }
 		public DbSet<Deals> Deals { get; set; }
 		public DbSet<Payment> Payments { get; set; }
 		public DbSet<MedicalHistory> MedicalHistories { get; set; }
@@ -47,6 +51,7 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 			ConfigureDoctor(modelBuilder);
 			ConfigureDeals(modelBuilder);
 			ConfigurePayment(modelBuilder);
+
 			modelBuilder.Entity<User>(entity =>
 			{
 				entity.HasIndex(u => u.NormalizedEmail)
@@ -216,13 +221,8 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 
 				// Configure relationships
 				entity.HasMany(h => h.Ambulances)
-					.WithOne()
+					.WithOne(a => a.Hospital)
 					.HasForeignKey(a => a.HospitalId)
-					.OnDelete(DeleteBehavior.Cascade);
-
-				entity.HasMany(h => h.Doctors)
-					.WithOne()
-					.HasForeignKey(d => d.HospitalId)
 					.OnDelete(DeleteBehavior.Cascade);
 			});
 		}
@@ -274,14 +274,52 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 			modelBuilder.Entity<Doctor>(entity =>
 			{
 				entity.HasKey(d => d.DoctorId);
-				entity.HasOne(d => d.Hospital)
-					  .WithMany(h => h.Doctors)
-					  .HasForeignKey(d => d.HospitalId);
 
-				entity.Property(d => d.DoctorName).IsRequired().HasMaxLength(50);
-				entity.Property(d => d.Specialization).IsRequired().HasMaxLength(100);
-				entity.Property(d => d.Phone).IsRequired().HasMaxLength(20);
-				entity.Property(d => d.Email).IsRequired().HasMaxLength(100);
+				// Required fields configuration
+				entity.Property(d => d.Name)
+					.IsRequired()
+					.HasMaxLength(100);
+
+				entity.Property(d => d.Specialty)
+					.IsRequired()
+					.HasMaxLength(100);
+
+				entity.Property(d => d.Education)
+					.HasMaxLength(500);
+
+				entity.Property(d => d.Hospital)
+					.HasMaxLength(100);
+
+				entity.Property(d => d.ImageUrl)
+					.HasMaxLength(255);
+
+				entity.Property(d => d.Thumbnail)
+					.HasMaxLength(255);
+
+				entity.Property(d => d.Location)
+					.HasMaxLength(500);
+
+				entity.Property(d => d.Rating)
+					.HasDefaultValue(0.0);
+
+				entity.Property(d => d.AcceptInsurance)
+					.HasDefaultValue(false);
+
+				// Configure WorkingDays as a string
+				entity.Property(d => d.WorkingDays)
+					.IsRequired()
+					.HasMaxLength(20);  // Enough for "0,1,2,3,4,5,6"
+
+				// Relationships
+				entity.HasMany(d => d.Schedules)
+					.WithOne(s => s.Doctor)
+					.HasForeignKey(s => s.DoctorId)
+					.OnDelete(DeleteBehavior.Cascade);
+
+				entity.HasMany(d => d.Appointments)
+					.WithOne(a => a.Doctor)
+					.HasForeignKey(a => a.DoctorId)
+					.OnDelete(DeleteBehavior.Cascade);
 			});
 		}
 
@@ -316,6 +354,11 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 				entity.Property(p => p.PaymentMethod).IsRequired();
 				entity.Property(p => p.PaymentDate).IsRequired();
 			});
+		}
+
+		public async Task<int> SaveChangesAsync()
+		{
+			return await base.SaveChangesAsync();
 		}
 
 		public async Task<IDbContextTransaction> BeginTransactionAsync()

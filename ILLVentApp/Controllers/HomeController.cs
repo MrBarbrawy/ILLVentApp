@@ -25,6 +25,18 @@ namespace ILLVentApp.Controllers
             return View(hospitals);
         }
 
+        public async Task<IActionResult> TestDoctorImages()
+        {
+            var doctors = await _context.Set<Doctor>().ToListAsync();
+            return View(doctors);
+        }
+
+        public async Task<IActionResult> TestPharmacyImages()
+        {
+            var pharmacies = await _context.Set<Pharmacy>().ToListAsync();
+            return View(pharmacies);
+        }
+
         public async Task<IActionResult> TestImagesOld()
         {
             return RedirectToAction(nameof(TestImages));

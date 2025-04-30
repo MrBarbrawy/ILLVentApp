@@ -10,6 +10,7 @@ namespace ILLVentApp.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Only pharmacy-related changes
             migrationBuilder.DropColumn(
                 name: "Latitude",
                 table: "Pharmacies");
@@ -64,6 +65,7 @@ namespace ILLVentApp.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            // Revert pharmacy-related changes
             migrationBuilder.DropColumn(
                 name: "AcceptPrivateInsurance",
                 table: "Pharmacies");

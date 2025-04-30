@@ -1,0 +1,57 @@
+[
+  {
+    "Name": "Dr. Ahmed Ayman",
+    "Specialty": "General Surgery",
+    "Education": "Graduated From Ain Shams University, PhD. from Harvard",
+    "Hospital": "Al-Kasr AL-Ainy Hospital",
+    "Location": "29 Cleopatra, Maidan Salahuddin Square, Almazah, Heliopolis",
+    "ImageUrl": "/images/doctors/source/ahmed-ayman.png",
+    "Thumbnail": "/images/doctors/source/ahmed-ayman.png",
+    "Rating": 4.0,
+    "AcceptInsurance": true
+  },
+  {
+    "Name": "Dr. Manal Mansour",
+    "Specialty": "Ophthalmologist",
+    "Education": "Graduated From Helwan University, PhD. from Harvard",
+    "Hospital": "Dar Al Fouad Hospital",
+    "Location": "6th of October City, Giza",
+    "ImageUrl": "/images/doctors/source/manal-mansour.png",
+    "Thumbnail": "/images/doctors/source/manal-mansour.png",
+    "Rating": 4.5,
+    "AcceptInsurance": true
+  },
+  {
+    "Name": "Dr. Khaled Hassan",
+    "Specialty": "Cardiology",
+    "Education": "Cairo University Faculty of Medicine, Fellowship from Cleveland Clinic",
+    "Hospital": "As-Salam International Hospital",
+    "Location": "Corniche El Nile, Maadi, Cairo",
+    "ImageUrl": "/images/doctors/source/khaled-hassan.png",
+    "Thumbnail": "/images/doctors/source/khaled-hassan.png",
+    "Rating": 4.8,
+    "AcceptInsurance": true
+  },
+  {
+    "Name": "Dr. Sarah El-Sayed",
+    "Specialty": "Pediatrics",
+    "Education": "Ain Shams University, American Board Certified",
+    "Hospital": "Cleopatra Hospital",
+    "Location": "Heliopolis, Cairo",
+    "ImageUrl": "/images/doctors/source/sarah-elsayed.png",
+    "Thumbnail": "/images/doctors/source/sarah-elsayed.png",
+    "Rating": 4.6,
+    "AcceptInsurance": true
+  },
+  {
+    "Name": "Dr. Omar Farouk",
+    "Specialty": "Neurology",
+    "Education": "Alexandria University, Fellowship from Johns Hopkins",
+    "Hospital": "Saudi German Hospital Cairo",
+    "Location": "Hadayek Al Ahram, Giza",
+    "ImageUrl": "/images/doctors/source/omar-farouk.png",
+    "Thumbnail": "/images/doctors/source/omar-farouk.png",
+    "Rating": 4.7,
+    "AcceptInsurance": true
+  }
+] 

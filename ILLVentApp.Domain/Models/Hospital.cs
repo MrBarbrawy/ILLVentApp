@@ -19,13 +19,12 @@
 
 		// Navigation properties
 		public List<Ambulance> Ambulances { get; set; }
-		public List<Doctor> Doctors { get; set; }
 
 		public Hospital()
 		{
 			Specialties = new List<string>();
 			Ambulances = new List<Ambulance>();
-			Doctors = new List<Doctor>();
+			
 		}
 	}
 }
