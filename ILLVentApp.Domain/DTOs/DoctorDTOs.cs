@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace ILLVentApp.Domain.DTOs
 {
@@ -17,7 +19,12 @@ namespace ILLVentApp.Domain.DTOs
 
     public class DayAvailabilityDTO
     {
+        [JsonIgnore]
         public DateTime Date { get; set; }
+
+        [JsonPropertyName("date")]
+        public string DateString => Date.ToString("yyyy-MM-dd");
+        
         public bool IsAvailable { get; set; }
         public string FormattedDate { get; set; }
     }

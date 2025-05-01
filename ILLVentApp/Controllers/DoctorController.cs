@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Security.Claims;
+using System.Globalization;
+using System.Web;
 
 namespace ILLVentApp.Controllers
 {
@@ -40,14 +42,26 @@ namespace ILLVentApp.Controllers
         }
 
         [HttpGet("{doctorId}/schedule")]
-        public async Task<ActionResult<IEnumerable<TimeSlotDTO>>> GetDoctorDaySchedule(int doctorId,[FromQuery] DateTime date)
+        public async Task<ActionResult<IEnumerable<TimeSlotDTO>>> GetDoctorDaySchedule(int doctorId, [FromQuery] string date)
         {
-            var schedule = await _doctorService.GetDoctorDayScheduleAsync(doctorId, date);
-            if (schedule == null)
+            try
             {
-                return NotFound();
+                if (!DateTime.TryParse(date, out DateTime requestedDate))
+                {
+                    return BadRequest("Invalid date format. Please use YYYY-MM-DD format (e.g. 2025-05-02)");
+                }
+
+                var schedule = await _doctorService.GetDoctorDayScheduleAsync(doctorId, requestedDate);
+                if (schedule == null)
+                {
+                    return NotFound();
+                }
+                return Ok(schedule);
             }
-            return Ok(schedule);
+            catch (Exception ex)
+            {
+                return BadRequest($"Error: {ex.Message}");
+            }
         }
 
         

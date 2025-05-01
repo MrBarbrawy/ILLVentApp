@@ -79,7 +79,7 @@ namespace ILLVentApp.Application.Services
             return dto;
         }
 
-        public async Task<IEnumerable<TimeSlotDTO>> GetDoctorDayScheduleAsync(int doctorId, DateTime date)
+        public async Task<IEnumerable<TimeSlotDTO>> GetDoctorDayScheduleAsync(int doctorId, DateTime requestedDate)
         {
             var doctor = await _context.Doctors
                 .FirstOrDefaultAsync(d => d.DoctorId == doctorId);
@@ -87,77 +87,66 @@ namespace ILLVentApp.Application.Services
             if (doctor == null)
                 throw new NotFoundException("Doctor not found");
 
-            // Create DateTimeOffset from input date to handle timezone
-            var dateOffset = new DateTimeOffset(date);
-            
-            // Since we're dealing with +03:00 timezone, we need to add a day to UTC
-            var utcDate = dateOffset.UtcDateTime.Date.AddDays(1);
-            var currentUtcDate = DateTime.UtcNow.Date;
+            // Use the date part only, ignore time
+            var date = requestedDate.Date;
+            var today = DateTime.Now.Date;
 
-            // Use the local date for working day check
-            if (!doctor.WorkingDaysArray.Contains(date.DayOfWeek))
-                return Enumerable.Empty<TimeSlotDTO>();
-
-            if (utcDate < currentUtcDate)
-                return Enumerable.Empty<TimeSlotDTO>();
-
-            // Generate time slots
-            var timeSlots = new List<TimeSlotDTO>();
-            var currentTime = doctor.StartTime;
-
-            while (currentTime.Add(TimeSpan.FromMinutes(doctor.SlotDurationMinutes)) <= doctor.EndTime)
+            // Basic validations
+            if (date < today)
             {
-                var slotStartUtc = utcDate.Add(currentTime);
-                var slotEndUtc = slotStartUtc.Add(TimeSpan.FromMinutes(doctor.SlotDurationMinutes));
-
-                // Convert to local time for display
-                var slotStartLocal = slotStartUtc.Add(dateOffset.Offset);
-                var slotEndLocal = slotEndUtc.Add(dateOffset.Offset);
-
-                timeSlots.Add(new TimeSlotDTO
-                {
-                    StartTime = slotStartUtc,
-                    EndTime = slotEndUtc,
-                    IsReserved = false,
-                    FormattedStartTime = slotStartLocal.ToString("dddd, MMMM d, yyyy hh:mm tt"),
-                    FormattedEndTime = slotEndLocal.ToString("dddd, MMMM d, yyyy hh:mm tt")
-                });
-
-                currentTime = currentTime.Add(TimeSpan.FromMinutes(doctor.SlotDurationMinutes));
+                return Enumerable.Empty<TimeSlotDTO>();
             }
 
-            // Get appointments
-            var appointments = await _context.Appointments
+            if (!doctor.WorkingDaysArray.Contains(date.DayOfWeek))
+            {
+                return Enumerable.Empty<TimeSlotDTO>();
+            }
+
+            // Get booked appointments first
+            var bookedAppointments = await _context.Appointments
                 .Where(a => a.DoctorId == doctorId &&
-                           a.AppointmentDate.Date == utcDate.Date &&
+                           a.AppointmentDate.Date == date &&
                            a.Status != "Cancelled")
                 .ToListAsync();
 
-            // Mark booked slots
-            foreach (var appointment in appointments)
+            var timeSlots = new List<TimeSlotDTO>();
+            var currentTime = new TimeSpan(9, 0, 0); // Start at 9 AM
+            var endTime = new TimeSpan(17, 0, 0);    // End at 5 PM
+            var slotDuration = TimeSpan.FromMinutes(30); // 30-minute slots
+
+            while (currentTime < endTime)
             {
-                foreach (var slot in timeSlots)
+                // Skip past time slots if it's today
+                if (date == today && currentTime <= DateTime.Now.TimeOfDay)
                 {
-                    if (slot.StartTime.TimeOfDay >= appointment.StartTime &&
-                        slot.StartTime.TimeOfDay < appointment.EndTime)
-                    {
-                        slot.IsReserved = true;
-                    }
+                    currentTime = currentTime.Add(slotDuration);
+                    continue;
                 }
+
+                // Check if this slot is booked
+                var isBooked = bookedAppointments.Any(a => 
+                    a.StartTime == currentTime);
+
+                // Only add unbooked slots
+                if (!isBooked)
+                {
+                    var slotStart = date.Add(currentTime);
+                    var slotEnd = slotStart.Add(slotDuration);
+
+                    timeSlots.Add(new TimeSlotDTO
+                    {
+                        StartTime = slotStart,
+                        EndTime = slotEnd,
+                        IsReserved = false,
+                        FormattedStartTime = slotStart.ToString("h:mm"),
+                        FormattedEndTime = slotEnd.ToString("h:mm")
+                    });
+                }
+
+                currentTime = currentTime.Add(slotDuration);
             }
 
-            var availableTimeSlots = timeSlots.Where(slot => !slot.IsReserved).ToList();
-
-            // If it's today, remove past time slots
-            if (utcDate == currentUtcDate)
-            {
-                var nowUtc = DateTime.UtcNow;
-                availableTimeSlots = availableTimeSlots
-                    .Where(slot => slot.StartTime > nowUtc)
-                    .ToList();
-            }
-
-            return availableTimeSlots;
+            return timeSlots;
         }
 
         private async Task<List<DayAvailabilityDTO>> GetAvailableDaysForDoctor(int doctorId)
@@ -181,76 +170,43 @@ namespace ILLVentApp.Application.Services
                        a.Status != "Cancelled")
                 .ToListAsync();
 
-            // Get the local timezone offset
-            var localOffset = TimeZoneInfo.Local.GetUtcOffset(currentDateTime);
-
             while (currentDate <= endDate)
             {
                 if (workingDays.Contains(currentDate.DayOfWeek))
                 {
                     // Skip if it's today and we're past working hours
                     if (currentDate.Date == currentDateTime.Date && 
-                        currentDateTime.TimeOfDay > doctor.EndTime)
+                        currentDateTime.TimeOfDay > new TimeSpan(17, 0, 0)) // 5 PM
                     {
                         currentDate = currentDate.AddDays(1);
                         continue;
                     }
 
-                    var cacheKey = GetTimeSlotCacheKey(doctorId, currentDate);
-                    List<TimeSlotDTO> timeSlots;
+                    // Check for available slots
+                    var dayStart = new TimeSpan(9, 0, 0); // 9 AM
+                    var dayEnd = new TimeSpan(17, 0, 0);  // 5 PM
+                    var slotDuration = TimeSpan.FromMinutes(30);
+                    var hasAvailableSlots = false;
 
-                    lock (_cacheLock)
+                    for (var time = dayStart; time < dayEnd; time = time.Add(slotDuration))
                     {
-                        if (!_timeSlotCache.TryGetValue(cacheKey, out timeSlots))
+                        // Skip past times for today
+                        if (currentDate.Date == currentDateTime.Date && time <= currentDateTime.TimeOfDay)
                         {
-                            timeSlots = GenerateTimeSlots(doctor, currentDate, localOffset);
-                            _timeSlotCache[cacheKey] = timeSlots;
+                            continue;
+                        }
+
+                        // Check if this slot is booked
+                        var isBooked = bookedAppointments.Any(a => 
+                            a.AppointmentDate.Date == currentDate.Date && 
+                            a.StartTime == time);
+
+                        if (!isBooked)
+                        {
+                            hasAvailableSlots = true;
+                            break;
                         }
                     }
-
-                    // Create a copy of time slots to avoid modifying cached version
-                    var dayTimeSlots = timeSlots.Select(ts => new TimeSlotDTO
-                    {
-                        StartTime = ts.StartTime,
-                        EndTime = ts.EndTime,
-                        IsReserved = ts.IsReserved,
-                        FormattedStartTime = ts.FormattedStartTime,
-                        FormattedEndTime = ts.FormattedEndTime
-                    }).ToList();
-
-                    // For today, remove time slots that are in the past
-                    if (currentDate.Date == currentDateTime.Date)
-                    {
-                        dayTimeSlots.RemoveAll(slot => slot.StartTime.TimeOfDay <= currentDateTime.TimeOfDay);
-                    }
-
-                    var dayAppointments = bookedAppointments
-                        .Where(a => a.AppointmentDate.Date == currentDate.Date)
-                        .ToList();
-
-                    // Mark booked slots as reserved
-                    foreach (var appointment in dayAppointments)
-                    {
-                        foreach (var slot in dayTimeSlots)
-                        {
-                            if (slot.StartTime >= appointment.AppointmentDate.Add(appointment.StartTime) &&
-                                slot.StartTime < appointment.AppointmentDate.Add(appointment.EndTime))
-                            {
-                                slot.IsReserved = true;
-                                
-                                // Update cache
-                                lock (_cacheLock)
-                                {
-                                    var cachedSlot = _timeSlotCache[cacheKey].First(s => 
-                                        s.StartTime == slot.StartTime && s.EndTime == slot.EndTime);
-                                    cachedSlot.IsReserved = true;
-                                }
-                            }
-                        }
-                    }
-
-                    // Check if there are any available slots
-                    var hasAvailableSlots = dayTimeSlots.Any(s => !s.IsReserved);
 
                     if (hasAvailableSlots)
                     {
@@ -258,16 +214,13 @@ namespace ILLVentApp.Application.Services
                         {
                             Date = currentDate,
                             IsAvailable = true,
-                            FormattedDate = currentDate.ToString("dddd d MMMM")  // "Monday 12 April"
+                            FormattedDate = currentDate.ToString("dddd d MMMM")
                         });
                     }
                 }
 
                 currentDate = currentDate.AddDays(1);
             }
-
-            // Clean up old cache entries
-            CleanupCache();
 
             return availableDays;
         }
@@ -326,15 +279,6 @@ namespace ILLVentApp.Application.Services
         private string FormatDateTime(DateTime dateTime)
         {
             return dateTime.ToString("dddd, MMMM d, yyyy hh:mm tt");
-        }
-
-        private string GetFormattedWorkingDays(Doctor doctor)
-        {
-            var daysOfWeek = doctor.WorkingDaysArray
-                .Select(d => d.ToString("G"))  // Gets the full name (Monday, Tuesday, etc.)
-                .ToList();
-
-            return string.Join(", ", daysOfWeek);
         }
 
         public async Task<AppointmentResponseDTO> CreateAppointmentAsync(AppointmentRequestWithUser appointmentRequest)
