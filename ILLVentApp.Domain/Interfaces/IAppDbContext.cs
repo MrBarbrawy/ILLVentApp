@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ILLVentApp.Domain.Models;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.Threading.Tasks;
 
 namespace ILLVentApp.Domain.Interfaces
@@ -25,9 +26,14 @@ namespace ILLVentApp.Domain.Interfaces
         DbSet<SurgicalHistory> SurgicalHistories { get; set; }
         DbSet<ImmunizationHistory> ImmunizationHistories { get; set; }
         DbSet<SocialHistory> SocialHistories { get; set; }
+        DbSet<Product> Products { get; set; }
+        DbSet<Order> Orders { get; set; }
+        DbSet<OrderItem> OrderItems { get; set; }
+        DbSet<CartItem> CartItems { get; set; }
         
         Task<int> SaveChangesAsync();
         Task<IDbContextTransaction> BeginTransactionAsync();
         DbSet<T> Set<T>() where T : class;
+        EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;
     }
 } 

@@ -4,6 +4,7 @@ using ILLVentApp.Domain.Interfaces;
 using ILLVentApp.Domain.Models;
 using ILLVentApp.Infrastructure.Configuration;
 using ILLVentApp.Infrastructure.Data.Contexts;
+using ILLVentApp.Infrastructure.Data.Seeding;
 using ILLVentApp.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -16,6 +17,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json.Serialization;
 using ILLVentApp.Application.Interfaces;
+using Stripe;
 
 
 namespace ILLVentApp
@@ -99,9 +101,19 @@ namespace ILLVentApp
             builder.Services.Configure<EmailSettings>(
             builder.Configuration.GetSection(EmailSettings.SectionName));
 
-            builder.Services.AddAutoMapper(typeof(AuthProfile));
+            // Configure Stripe
+            StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
+
+            builder.Services.AddAutoMapper(typeof(AuthProfile), typeof(ProductProfile), typeof(OrderProfile));
 
             builder.Services.AddHttpContextAccessor();
+
+            // Add logging
+            builder.Services.AddLogging(loggingBuilder =>
+            {
+                loggingBuilder.AddConsole();
+                loggingBuilder.AddDebug();
+            });
 
             builder.Services
            .AddScoped<IAuthService, AuthService>()
@@ -112,6 +124,9 @@ namespace ILLVentApp
            .AddScoped<IHospitalService, HospitalService>()
            .AddScoped<IPharmacyService, PharmacyService>()
            .AddScoped<IDoctorService, DoctorService>()
+           .AddScoped<IProductService,Application.Services.ProductService>()
+           .AddScoped<ICartService, CartService>()
+           .AddScoped<IOrderService, OrderService>()
            .AddSingleton<IDistributedLockProvider, LocalLockProvider>()
            .AddSingleton<IRetryPolicyProvider, RetryPolicyProvider>();
 
@@ -171,6 +186,10 @@ namespace ILLVentApp
                          ILLVentApp.Infrastructure.Data.Seeding.PharmacyImageSeeder.SeedPharmacyImages(serviceProvider);
                          ILLVentApp.Infrastructure.Data.Seeding.DoctorDataSeeder.SeedDoctorData(serviceProvider);
                          ILLVentApp.Infrastructure.Data.Seeding.DoctorImageSeeder.SeedDoctorImages(serviceProvider);
+                         
+                         // Seed product data
+                         var dbContext = serviceProvider.GetRequiredService<IAppDbContext>();
+                         ProductSeeder.SeedProductsAsync(dbContext).Wait();
                     }
                     catch (Exception ex)
                     {
@@ -199,7 +218,6 @@ namespace ILLVentApp
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
-                endpoints.MapControllers();
             });
 
             app.Run();

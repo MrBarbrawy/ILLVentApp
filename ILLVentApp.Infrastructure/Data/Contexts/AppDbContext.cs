@@ -11,6 +11,7 @@ using ILLVentApp.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Text.Json;
 using ILLVentApp.Infrastructure.Data.Seeding;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace ILLVentApp.Infrastructure.Data.Contexts
 {
@@ -36,6 +37,10 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 		public DbSet<SurgicalHistory> SurgicalHistories { get; set; }
 		public DbSet<ImmunizationHistory> ImmunizationHistories { get; set; }
 		public DbSet<SocialHistory> SocialHistories { get; set; }
+		public DbSet<Product> Products { get; set; }
+		public DbSet<Order> Orders { get; set; }
+		public DbSet<OrderItem> OrderItems { get; set; }
+		public DbSet<CartItem> CartItems { get; set; }
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -51,6 +56,10 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 			ConfigureDoctor(modelBuilder);
 			ConfigureDeals(modelBuilder);
 			ConfigurePayment(modelBuilder);
+			ConfigureProduct(modelBuilder);
+			ConfigureOrder(modelBuilder);
+			ConfigureOrderItem(modelBuilder);
+			ConfigureCartItem(modelBuilder);
 
 			modelBuilder.Entity<User>(entity =>
 			{
@@ -356,6 +365,159 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 			});
 		}
 
+		private void ConfigureProduct(ModelBuilder modelBuilder)
+		{
+			modelBuilder.Entity<Product>(entity =>
+			{
+				entity.HasKey(p => p.ProductId);
+				
+				entity.Property(p => p.Name)
+					.IsRequired()
+					.HasMaxLength(100);
+
+				entity.Property(p => p.Description)
+					.IsRequired()
+					.HasMaxLength(500);
+
+				entity.Property(p => p.Price)
+					.IsRequired()
+					.HasColumnType("decimal(18,2)");
+
+				entity.Property(p => p.ImageUrl)
+					.HasMaxLength(255);
+
+				entity.Property(p => p.Thumbnail)
+					.HasMaxLength(255);
+
+				entity.Property(p => p.Rating)
+					.HasDefaultValue(0.0);
+
+				entity.Property(p => p.ProductType)
+					.IsRequired()
+					.HasMaxLength(50);
+
+				entity.Property(p => p.TechnicalDetails)
+					.HasMaxLength(1000);
+
+				entity.Property(p => p.CreatedAt)
+					.IsRequired()
+					.HasDefaultValueSql("GETUTCDATE()");
+
+				entity.Property(p => p.UpdatedAt)
+					.IsRequired()
+					.HasDefaultValueSql("GETUTCDATE()");
+			});
+		}
+
+		private void ConfigureOrder(ModelBuilder modelBuilder)
+		{
+			modelBuilder.Entity<Order>(entity =>
+			{
+				entity.HasKey(o => o.OrderId);
+				
+				entity.HasOne(o => o.User)
+					.WithMany()
+					.HasForeignKey(o => o.UserId)
+					.OnDelete(DeleteBehavior.Restrict);
+
+				entity.Property(o => o.OrderDate)
+					.IsRequired()
+					.HasDefaultValueSql("GETUTCDATE()");
+
+				entity.Property(o => o.TotalAmount)
+					.IsRequired()
+					.HasColumnType("decimal(18,2)");
+
+				entity.Property(o => o.PaymentMethod)
+					.IsRequired()
+					.HasMaxLength(20);
+
+				entity.Property(o => o.PaymentStatus)
+					.IsRequired()
+					.HasMaxLength(20)
+					.HasDefaultValue("Pending");
+
+				entity.Property(o => o.ShippingAddress)
+					.IsRequired()
+					.HasMaxLength(500);
+
+				entity.Property(o => o.ShippingCost)
+					.IsRequired()
+					.HasColumnType("decimal(18,2)");
+
+				entity.Property(o => o.OrderStatus)
+					.IsRequired()
+					.HasMaxLength(20)
+					.HasDefaultValue("Pending");
+
+				entity.Property(o => o.StripeSessionId)
+					.HasMaxLength(100)
+					.IsRequired(false);
+
+				entity.Property(o => o.StripePaymentIntentId)
+					.HasMaxLength(100)
+					.IsRequired(false);
+			});
+		}
+
+		private void ConfigureOrderItem(ModelBuilder modelBuilder)
+		{
+			modelBuilder.Entity<OrderItem>(entity =>
+			{
+				entity.HasKey(oi => oi.OrderItemId);
+				
+				entity.HasOne(oi => oi.Order)
+					.WithMany(o => o.OrderItems)
+					.HasForeignKey(oi => oi.OrderId)
+					.OnDelete(DeleteBehavior.Cascade);
+
+				entity.HasOne(oi => oi.Product)
+					.WithMany(p => p.OrderItems)
+					.HasForeignKey(oi => oi.ProductId)
+					.OnDelete(DeleteBehavior.Restrict);
+
+				entity.Property(oi => oi.Quantity)
+					.IsRequired();
+
+				entity.Property(oi => oi.UnitPrice)
+					.IsRequired()
+					.HasColumnType("decimal(18,2)");
+
+				entity.Property(oi => oi.TotalPrice)
+					.IsRequired()
+					.HasColumnType("decimal(18,2)");
+			});
+		}
+
+		private void ConfigureCartItem(ModelBuilder modelBuilder)
+		{
+			modelBuilder.Entity<CartItem>(entity =>
+			{
+				entity.HasKey(ci => ci.CartItemId);
+				
+				entity.HasOne(ci => ci.User)
+					.WithMany()
+					.HasForeignKey(ci => ci.UserId)
+					.OnDelete(DeleteBehavior.Cascade);
+
+				entity.HasOne(ci => ci.Product)
+					.WithMany()
+					.HasForeignKey(ci => ci.ProductId)
+					.OnDelete(DeleteBehavior.Restrict);
+
+				entity.Property(ci => ci.Quantity)
+					.IsRequired();
+
+				entity.Property(ci => ci.CreatedAt)
+					.IsRequired()
+					.HasDefaultValueSql("GETUTCDATE()");
+
+				entity.Property(ci => ci.UpdatedAt)
+					.IsRequired()
+					.HasDefaultValueSql("GETUTCDATE()");
+			});
+		}
+
 		public async Task<int> SaveChangesAsync()
 		{
 			return await base.SaveChangesAsync();
@@ -364,6 +526,11 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 		public async Task<IDbContextTransaction> BeginTransactionAsync()
 		{
 			return await Database.BeginTransactionAsync();
+		}
+
+		public new EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class
+		{
+			return base.Entry(entity);
 		}
 	}
 }
