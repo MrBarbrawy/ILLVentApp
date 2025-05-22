@@ -204,9 +204,7 @@ namespace ILLVentApp.Domain.DTOs
     
     public class MedicalConditionDto
     {
-        public int Id { get; set; }
-        public int MedicalHistoryId { get; set; }
-
+        // Removed internal IDs for security - they should not be exposed in API responses
         [Required(ErrorMessage = "Condition is required")]
         [StringLength(100, ErrorMessage = "Condition cannot exceed 100 characters")]
         public string Condition { get; set; }
@@ -218,8 +216,7 @@ namespace ILLVentApp.Domain.DTOs
     
     public class FamilyHistoryDto
     {
-        public int Id { get; set; }
-        public int MedicalHistoryId { get; set; }
+        // Removed internal IDs for security - they should not be exposed in API responses
 
         public bool HasCancerPolyps { get; set; }
         [RequiredIf(nameof(HasCancerPolyps), true, ErrorMessage = "Relationship is required when Cancer/Polyp is selected")]
@@ -282,8 +279,7 @@ namespace ILLVentApp.Domain.DTOs
     
     public class SurgicalHistoryDto
     {
-        public int Id { get; set; }
-        public int MedicalHistoryId { get; set; }
+        // Removed internal IDs for security - they should not be exposed in API responses
 
         [Required(ErrorMessage = "Surgery type is required")]
         [StringLength(100, ErrorMessage = "Surgery type cannot exceed 100 characters")]
@@ -299,8 +295,7 @@ namespace ILLVentApp.Domain.DTOs
     
     public class ImmunizationHistoryDto
     {
-        public int Id { get; set; }
-        public int MedicalHistoryId { get; set; }
+        // Removed internal IDs for security - they should not be exposed in API responses
 
         [Required(ErrorMessage = "Flu vaccination status is required")]
         public bool HasFlu { get; set; }
@@ -347,8 +342,53 @@ namespace ILLVentApp.Domain.DTOs
         [Range(0, 100, ErrorMessage = "Years smoked must be between 0 and 100")]
         public int? YearsSmoked { get; set; }
 
+        // Only validate YearStopped if it's provided and if YearsSmoked > 0
         [Range(1900, 2100, ErrorMessage = "Year stopped must be between 1900 and 2100")]
         public int? YearStopped { get; set; }
+        
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            // Only validate YearStopped if person has smoking history
+            if (YearsSmoked.HasValue && YearsSmoked.Value > 0)
+            {
+                // YearStopped should be provided
+                if (!YearStopped.HasValue)
+                {
+                    yield return new ValidationResult(
+                        "Year stopped is required when years smoked is greater than 0",
+                        new[] { nameof(YearStopped) });
+                }
+                else
+                {
+                    // Make sure the year is valid
+                    int currentYear = DateTime.Now.Year;
+                    if (YearStopped.Value > currentYear)
+                    {
+                        yield return new ValidationResult(
+                            $"Year stopped cannot be in the future (current year: {currentYear})",
+                            new[] { nameof(YearStopped) });
+                    }
+                }
+            }
+            else if (YearsSmoked.HasValue && YearsSmoked.Value == 0)
+            {
+                // If no smoking history (YearsSmoked is 0), YearStopped should be null
+                if (YearStopped.HasValue)
+                {
+                    yield return new ValidationResult(
+                        "Year stopped should not be provided when there's no smoking history (years smoked is 0)",
+                        new[] { nameof(YearStopped) });
+                }
+                
+                // If no smoking history, PacksPerDay should be 0 or null
+                if (PacksPerDay.HasValue && PacksPerDay.Value > 0)
+                {
+                    yield return new ValidationResult(
+                        "Packs per day should be 0 when there's no smoking history (years smoked is 0)",
+                        new[] { nameof(PacksPerDay) });
+                }
+            }
+        }
     }
     
     // Result of medical history operations
@@ -367,6 +407,16 @@ namespace ILLVentApp.Domain.DTOs
                 Data = data
             };
         }
+
+        public static MedicalHistoryResult Successful(MedicalHistoryData data, string message)
+        {
+            return new MedicalHistoryResult
+            {
+                Success = true,
+                Message = message,
+                Data = data
+            };
+        }
         
         public static MedicalHistoryResult Failed(string message, List<string> errors = null)
         {
@@ -382,8 +432,7 @@ namespace ILLVentApp.Domain.DTOs
     // Data returned from medical history queries
     public class MedicalHistoryData
     {
-        public int Id { get; set; }
-        public string UserId { get; set; }
+        // Removed Id and UserId for security - internal IDs should not be exposed in API responses
         public string Address { get; set; }
         public string BloodType { get; set; }
         public int Age { get; set; }
@@ -415,23 +464,27 @@ namespace ILLVentApp.Domain.DTOs
         public bool Success { get; set; }
         public string Message { get; set; }
         public string QrCodeData { get; set; }
-        
-        public static QrCodeResult Successful(string qrCodeData)
+        public string UserFriendlyToken { get; set; }
+
+        public static QrCodeResult Successful(string qrCodeData, string userFriendlyToken = null)
         {
             return new QrCodeResult
             {
                 Success = true,
                 Message = "QR code generated successfully",
-                QrCodeData = qrCodeData
+                QrCodeData = qrCodeData,
+                UserFriendlyToken = userFriendlyToken
             };
         }
-        
+
         public static QrCodeResult Failed(string message)
         {
             return new QrCodeResult
             {
                 Success = false,
-                Message = message
+                Message = message,
+                QrCodeData = null,
+                UserFriendlyToken = null
             };
         }
     }

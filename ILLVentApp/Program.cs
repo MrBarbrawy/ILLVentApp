@@ -28,7 +28,7 @@ namespace ILLVentApp
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+			// Add services to the container.
             builder.Services.AddControllersWithViews()
                 .AddJsonOptions(options =>
                 {
@@ -49,19 +49,19 @@ namespace ILLVentApp
             builder.Services.AddSwaggerGen();
 
             // Add DbContext
-            builder.Services.AddDbContext<AppDbContext>(options =>
+			builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             // Register IAppDbContext to use AppDbContext
             builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 
-            builder.Services.AddIdentity<User, IdentityRole>(options =>
-            {
+			builder.Services.AddIdentity<User, IdentityRole>(options =>
+			{
                 // Password settings
-                options.Password.RequireDigit = true;
+				options.Password.RequireDigit = true;
                 options.Password.RequireLowercase = true;
                 options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequireUppercase = true;
+				options.Password.RequireUppercase = true;
                 options.Password.RequiredLength = 8;
                 options.Password.RequiredUniqueChars = 1;
 
@@ -72,34 +72,54 @@ namespace ILLVentApp
 
                 // User settings
                 options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
-                options.User.RequireUniqueEmail = true;
-            })
-            .AddEntityFrameworkStores<AppDbContext>()
+				options.User.RequireUniqueEmail = true;
+			})
+				.AddEntityFrameworkStores<AppDbContext>()
             .AddUserManager<CustomUserManager>()
-            .AddDefaultTokenProviders();
+                .AddDefaultTokenProviders();
 
             // Add JWT Authentication
-            builder.Services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
+			builder.Services.AddAuthentication(options =>
+			{
+				options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+				options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+			})
             .AddJwtBearer(options =>
             {
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
+            	options.TokenValidationParameters = new TokenValidationParameters
+            	{
+            		ValidateIssuer = true,
+            		ValidateAudience = true,
                     ValidateLifetime = false,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = builder.Configuration["Jwt:Issuer"],
-                    ValidAudience = builder.Configuration["Jwt:Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            		ValidateIssuerSigningKey = true,
+            		ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            		ValidAudience = builder.Configuration["Jwt:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+                    // Add more lenient validation options
+                    NameClaimType = "sub", // Make sure sub claim is mapped to name
+                    RoleClaimType = "role"
+            	};
+                
+                // Add event handlers for more detailed logging
+                options.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                        logger.LogError("Authentication failed: {Message}", context.Exception.Message);
+                        return Task.CompletedTask;
+                    },
+                    OnTokenValidated = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                        logger.LogInformation("Token validated successfully");
+                        return Task.CompletedTask;
+                    }
                 };
             });
 
-            builder.Services.Configure<EmailSettings>(
-            builder.Configuration.GetSection(EmailSettings.SectionName));
+			builder.Services.Configure<EmailSettings>(
+			builder.Configuration.GetSection(EmailSettings.SectionName));
 
             // Configure Stripe
             StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
@@ -115,11 +135,14 @@ namespace ILLVentApp
                 loggingBuilder.AddDebug();
             });
 
-            builder.Services
+            // Get encryption key for QR code service
+            var encryptionKey = builder.Configuration["Security:EncryptionKey"] ?? "Default32CharEncryptionKeyForDevOnly!";
+
+			builder.Services
            .AddScoped<IAuthService, AuthService>()
-           .AddScoped<IJwtService, JwtService>()
-           .AddScoped<IEmailService, EmailService>()
-           .AddScoped<IOtpService, OtpService>()
+		   .AddScoped<IJwtService, JwtService>()
+		   .AddScoped<IEmailService, EmailService>()
+		   .AddScoped<IOtpService, OtpService>()
            .AddScoped<IUserFriendlyIdService, UserFriendlyIdService>()
            .AddScoped<IHospitalService, HospitalService>()
            .AddScoped<IPharmacyService, PharmacyService>()
@@ -127,37 +150,50 @@ namespace ILLVentApp
            .AddScoped<IProductService,Application.Services.ProductService>()
            .AddScoped<ICartService, CartService>()
            .AddScoped<IOrderService, OrderService>()
-           .AddSingleton<IDistributedLockProvider, LocalLockProvider>()
-           .AddSingleton<IRetryPolicyProvider, RetryPolicyProvider>();
+           .AddScoped<IQrCodeService>(provider => 
+               new QrCodeService(
+                   provider.GetRequiredService<ILogger<QrCodeService>>(),
+                   encryptionKey))
+           .AddScoped<IMedicalHistoryService>(provider => 
+               new MedicalHistoryService(
+                   provider.GetRequiredService<IAppDbContext>(),
+                   provider.GetRequiredService<IQrCodeService>(),
+                   provider.GetRequiredService<ILogger<MedicalHistoryService>>(),
+                   encryptionKey))
+		   .AddSingleton<IDistributedLockProvider, LocalLockProvider>()
+		   .AddSingleton<IRetryPolicyProvider, RetryPolicyProvider>();
 
-            builder.Services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "IllVent API", Version = "v1" });
+			builder.Services.AddSwaggerGen(c =>
+			{
+				c.SwaggerDoc("v1", new OpenApiInfo { Title = "IllVent API", Version = "v1" });
 
-                // Add JWT Bearer authentication support
-                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-                {
-                    Description = "JWT Authorization header using the Bearer scheme",
-                    Name = "Authorization",
-                    In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.Http,
-                    Scheme = "bearer"
-                });
+				// Add JWT Bearer authentication support
+				c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+				{
+					Description = "JWT Authorization header using the Bearer scheme",
+					Name = "Authorization",
+					In = ParameterLocation.Header,
+					Type = SecuritySchemeType.Http,
+					Scheme = "bearer"
+				});
 
-                c.OperationFilter<SecurityRequirementsOperationFilter>();
-            });
+				c.OperationFilter<SecurityRequirementsOperationFilter>();
+			});
 
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("AllowAll", policy =>
-                {
-                    policy.AllowAnyOrigin()
-                          .AllowAnyMethod()
-                          .AllowAnyHeader();
-                });
-            });
+			builder.Services.AddCors(options =>
+			{
+				options.AddPolicy("AllowAll", policy =>
+				{
+					policy.AllowAnyOrigin()
+						  .AllowAnyMethod()
+						  .AllowAnyHeader();
+				});
+			});
 
-            builder.Services.AddControllers();
+			builder.Services.AddControllers()
+                // Explicitly register the controller assembly to ensure discovery
+                .AddApplicationPart(typeof(Controllers.MedicalHistoryController).Assembly);
+                
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
 
@@ -168,11 +204,11 @@ namespace ILLVentApp
             {
                 app.MapOpenApi();
 
-                app.UseSwagger();
-                app.UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "IllVent API v1");
-                });
+				app.UseSwagger();
+				app.UseSwaggerUI(c =>
+				{
+					c.SwaggerEndpoint("/swagger/v1/swagger.json", "IllVent API v1");
+				});
                 
                 // Seed data in development
                 using (var scope = app.Services.CreateScope())
@@ -197,7 +233,7 @@ namespace ILLVentApp
                         logger.LogError(ex, "An error occurred while seeding the database.");
                     }
                 }
-            }
+			}
 
             app.UseHttpsRedirection();
 

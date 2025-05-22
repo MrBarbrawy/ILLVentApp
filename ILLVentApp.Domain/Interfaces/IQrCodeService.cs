@@ -22,10 +22,17 @@ namespace ILLVentApp.Domain.Interfaces
         Task<bool> ValidateQrCodeAsync(string qrCode, DateTime generatedAt, DateTime expiresAt);
 
         /// <summary>
-        /// Decodes the data from a QR code
+        /// Decodes the data from a QR code (encrypted text)
         /// </summary>
         /// <param name="qrCode">The QR code to decode</param>
         /// <returns>The decoded data</returns>
         Task<string> DecodeQrCodeAsync(string qrCode);
+
+        /// <summary>
+        /// Reads a QR code from a base64 image and extracts the encrypted text
+        /// </summary>
+        /// <param name="base64Image">The base64 encoded QR code image</param>
+        /// <returns>The encrypted text from inside the QR code</returns>
+        Task<string> ReadQrCodeImageAsync(string base64Image);
     }
 } 

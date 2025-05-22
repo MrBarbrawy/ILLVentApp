@@ -18,7 +18,22 @@ namespace ILLVentApp.Domain.Interfaces
         // Generate QR code data for a user ID
         Task<QrCodeResult> GenerateQrCodeAsync(string userId);
         
-        // Get medical history using QR code data
+        // SECURE ACCESS: Get medical history using QR code data - requires ownership validation
         Task<MedicalHistoryResult> GetMedicalHistoryByQrCodeAsync(string qrCodeData);
+
+        // SECURE ACCESS: Get medical history using QR code data (images or encrypted text) - requires ownership validation
+        Task<MedicalHistoryResult> GetSecureMedicalHistoryByQrCodeAsync(string qrCodeData, string userId);
+
+        // SECURE ACCESS: Get medical history using token directly - requires ownership validation
+        Task<MedicalHistoryResult> GetMedicalHistoryByTokenAsync(string token);
+        
+        // EMERGENCY ACCESS: Get medical history using QR code data - no ownership validation
+        Task<MedicalHistoryResult> GetEmergencyMedicalHistoryByQrCodeAsync(string qrCodeData, string emergencyReason);
+        
+        // EMERGENCY ACCESS: Get medical history using token directly - no ownership validation
+        Task<MedicalHistoryResult> GetEmergencyMedicalHistoryByTokenAsync(string token, string emergencyReason);
+        
+        // Validate that the QR code belongs to the specified user
+        Task<ValidationnResult> ValidateQrCodeOwnershipAsync(string qrCodeData, string userId);
     }
 } 

@@ -8,6 +8,7 @@ using SixLabors.ImageSharp;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using ZXing;
 
 namespace ILLVentApp.Infrastructure.Services
 {
@@ -114,6 +115,92 @@ namespace ILLVentApp.Infrastructure.Services
                 _logger.LogError(ex, "Error decoding QR code");
                 throw;
             }
+        }
+
+        public async Task<string> ReadQrCodeImageAsync(string base64Image)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(base64Image))
+                {
+                    throw new ArgumentException("Base64 image data is required", nameof(base64Image));
+                }
+
+                // Remove data URL prefix if present
+                if (base64Image.StartsWith("data:image"))
+                {
+                    var commaIndex = base64Image.IndexOf(',');
+                    if (commaIndex > 0)
+                    {
+                        base64Image = base64Image.Substring(commaIndex + 1);
+                    }
+                }
+
+                // Convert base64 to byte array
+                var imageBytes = Convert.FromBase64String(base64Image);
+
+                // Load image using SixLabors.ImageSharp
+                using (var image = SixLabors.ImageSharp.Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>(imageBytes))
+                {
+                    // Convert ImageSharp image to byte array for ZXing
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        image.SaveAsPng(memoryStream);
+                        var pngBytes = memoryStream.ToArray();
+                        
+                        // Create a luminance source from the image
+                        var luminanceSource = new ZXing.RGBLuminanceSource(
+                            GetRgbValues(image), 
+                            image.Width, 
+                            image.Height
+                        );
+                        
+                        // Create a binary bitmap
+                        var binaryBitmap = new ZXing.Common.HybridBinarizer(luminanceSource);
+                        
+                        // Create QR code reader
+                        var reader = new ZXing.QrCode.QRCodeReader();
+                        
+                        // Decode the QR code
+                        var result = reader.decode(new ZXing.BinaryBitmap(binaryBitmap));
+                        
+                        if (result != null)
+                        {
+                            _logger.LogInformation("Successfully read QR code from image. Content length: {Length}", result.Text?.Length ?? 0);
+                            return await Task.FromResult(result.Text);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("No QR code found in the provided image");
+                            return null;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reading QR code from image: {Message}", ex.Message);
+                throw new InvalidOperationException($"Failed to read QR code from image: {ex.Message}", ex);
+            }
+        }
+
+        private byte[] GetRgbValues(SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32> image)
+        {
+            var rgbValues = new byte[image.Width * image.Height * 3];
+            var index = 0;
+            
+            for (int y = 0; y < image.Height; y++)
+            {
+                for (int x = 0; x < image.Width; x++)
+                {
+                    var pixel = image[x, y];
+                    rgbValues[index++] = pixel.R;
+                    rgbValues[index++] = pixel.G;
+                    rgbValues[index++] = pixel.B;
+                }
+            }
+            
+            return rgbValues;
         }
 
         private string EncryptString(string text)
