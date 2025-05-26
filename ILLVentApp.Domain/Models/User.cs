@@ -24,10 +24,6 @@ namespace ILLVentApp.Domain.Models
 		public string Address { get; set; } = "Pending";
 
 		[Required]
-		[MaxLength(20)]
-		public string Role { get; set; } = "User";
-
-		[Required]
 		public uint SecurityVersion { get; set; } = 1;
 
 		[Required]

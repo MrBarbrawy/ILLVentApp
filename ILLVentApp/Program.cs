@@ -216,6 +216,19 @@ namespace ILLVentApp
                     var serviceProvider = scope.ServiceProvider;
                     try
                     {
+                         // Seed roles first
+                         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                         var logger = serviceProvider.GetRequiredService<ILogger<ILLVentApp.Infrastructure.Data.Seeding.RoleSeeder>>();
+                         var roleSeeder = new ILLVentApp.Infrastructure.Data.Seeding.RoleSeeder(roleManager, logger);
+                         roleSeeder.SeedRolesAsync().Wait();
+                         
+                         // Migrate existing users to standard roles
+                         var userManager = serviceProvider.GetRequiredService<UserManager<User>>();
+                         var dbContext = serviceProvider.GetRequiredService<AppDbContext>();
+                         var migrationLogger = serviceProvider.GetRequiredService<ILogger<ILLVentApp.Infrastructure.Data.Seeding.ExistingUserRoleMigrator>>();
+                         var userMigrator = new ILLVentApp.Infrastructure.Data.Seeding.ExistingUserRoleMigrator(userManager, roleManager, dbContext, migrationLogger);
+                         userMigrator.MigrateExistingUsersAsync().Wait();
+                         
                          ILLVentApp.Infrastructure.Data.Seeding.HospitalDataSeeder.SeedHospitalData(serviceProvider);
                          ILLVentApp.Infrastructure.Data.Seeding.HospitalImageSeeder.SeedHospitalImages(serviceProvider);
                          ILLVentApp.Infrastructure.Data.Seeding.PharmacyDataSeeder.SeedPharmacyData(serviceProvider);
@@ -224,8 +237,8 @@ namespace ILLVentApp
                          ILLVentApp.Infrastructure.Data.Seeding.DoctorImageSeeder.SeedDoctorImages(serviceProvider);
                          
                          // Seed product data
-                         var dbContext = serviceProvider.GetRequiredService<IAppDbContext>();
-                         ProductSeeder.SeedProductsAsync(dbContext).Wait();
+                         var dbContext2 = serviceProvider.GetRequiredService<IAppDbContext>();
+                         ProductSeeder.SeedProductsAsync(dbContext2).Wait();
                     }
                     catch (Exception ex)
                     {

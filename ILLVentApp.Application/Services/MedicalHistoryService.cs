@@ -556,7 +556,7 @@ namespace ILLVentApp.Application.Services
             }
         }
 
-        public async Task<MedicalHistoryResult> GetSecureMedicalHistoryByQrCodeAsync(string qrCodeData, string userId)
+        public async Task<MedicalHistoryResult> GetMedicalHistoryByQrCodeAsync(string qrCodeData, string userId)
         {
             try
             {

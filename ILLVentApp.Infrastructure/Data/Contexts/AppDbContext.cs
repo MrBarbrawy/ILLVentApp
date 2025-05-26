@@ -92,10 +92,7 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 					.HasMaxLength(500)
 					.HasDefaultValue("Pending");
 
-				entity.Property(u => u.Role)
-					.IsRequired()
-					.HasMaxLength(20)
-					.HasDefaultValue("User");
+				// Removed Role property configuration - using standard ASP.NET Identity roles
 
 				entity.Property(u => u.IsEmailVerified)
 					.IsRequired()

@@ -161,7 +161,7 @@ namespace ILLVentApp.Controllers
                 _logger.LogInformation("User {UserId} attempting secure QR code scan", userId);
 
                 // Use the new secure method that can handle both images and encrypted text
-                var result = await _medicalHistoryService.GetSecureMedicalHistoryByQrCodeAsync(qrCodeData, userId);
+                var result = await _medicalHistoryService.GetMedicalHistoryByQrCodeAsync(qrCodeData, userId);
                 if (!result.Success)
                 {
                     _logger.LogWarning("Secure QR code scan failed for user {UserId}: {Message}", userId, result.Message);

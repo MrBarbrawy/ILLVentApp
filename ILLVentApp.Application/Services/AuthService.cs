@@ -90,10 +90,20 @@ public class AuthService : IAuthService
 				return AuthResult.Failure(result.Errors.Select(e => e.Description));
 			}
 
+			// Assign default "User" role
+			var roleResult = await _userManager.AddToRoleAsync(user, "User");
+			if (!roleResult.Succeeded)
+			{
+				_logger.LogWarning("Failed to assign default role to user {UserId}: {Errors}",
+					user.Id,
+					string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+				// Don't fail registration if role assignment fails, just log it
+			}
+
 			// Send verification email
 			await _emailService.SendVerificationEmailAsync(user.Email, otpCode);
 
-			_logger.LogInformation("User {UserId} registered successfully", user.Id);
+			_logger.LogInformation("User {UserId} registered successfully with default role", user.Id);
 			return AuthResult.success(email: user.Email);
 		}
 		catch (Exception ex)

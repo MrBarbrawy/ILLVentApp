@@ -19,10 +19,7 @@ namespace ILLVentApp.Domain.Interfaces
         Task<QrCodeResult> GenerateQrCodeAsync(string userId);
         
         // SECURE ACCESS: Get medical history using QR code data - requires ownership validation
-        Task<MedicalHistoryResult> GetMedicalHistoryByQrCodeAsync(string qrCodeData);
-
-        // SECURE ACCESS: Get medical history using QR code data (images or encrypted text) - requires ownership validation
-        Task<MedicalHistoryResult> GetSecureMedicalHistoryByQrCodeAsync(string qrCodeData, string userId);
+        Task<MedicalHistoryResult> GetMedicalHistoryByQrCodeAsync(string qrCodeData, string userId);
 
         // SECURE ACCESS: Get medical history using token directly - requires ownership validation
         Task<MedicalHistoryResult> GetMedicalHistoryByTokenAsync(string token);
