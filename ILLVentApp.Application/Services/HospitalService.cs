@@ -29,6 +29,7 @@ namespace ILLVentApp.Application.Services
             var hospitals = await _context.Set<Hospital>()
 			   .Select(h => new Hospital
 			   {
+				   HospitalId = h.HospitalId,
 				   Name = h.Name,
 				   Description = h.Description,
 				   Thumbnail = h.Thumbnail,
@@ -37,7 +38,11 @@ namespace ILLVentApp.Application.Services
 				   Rating = h.Rating,
 				   ContactNumber = h.ContactNumber,
 				   Established = h.Established,
-				   Specialties = h.Specialties
+				   Specialties = h.Specialties,
+				   IsAvailable = h.IsAvailable,
+				   Latitude = h.Latitude,
+				   Longitude = h.Longitude,
+				   HasContract = h.HasContract
 			   })
                 .ToListAsync();
 
@@ -46,8 +51,6 @@ namespace ILLVentApp.Application.Services
 
             return _mapper.Map<List<HospitalDto>>(hospitals);
 	   }
-
-
 
         private Hospital AddFullUrls(Hospital hospital)
         {
@@ -62,15 +65,13 @@ namespace ILLVentApp.Application.Services
             return hospital;
         }
 
-
-		/*
-
 	   public async Task<HospitalDto> GetHospitalByIdAsync(int id)
 	   {
 		   var hospital = await _context.Set<Hospital>()
 			   .Where(h => h.HospitalId == id)
 			   .Select(h => new Hospital
 			   {
+				   HospitalId = h.HospitalId,
 				   Name = h.Name,
 				   Description = h.Description,
 				   Thumbnail = h.Thumbnail,
@@ -79,7 +80,11 @@ namespace ILLVentApp.Application.Services
 				   Rating = h.Rating,
 				   ContactNumber = h.ContactNumber,
 				   Established = h.Established,
-				   Specialties = h.Specialties
+				   Specialties = h.Specialties,
+				   IsAvailable = h.IsAvailable,
+				   Latitude = h.Latitude,
+				   Longitude = h.Longitude,
+				   HasContract = h.HasContract
 			   })
 			   .FirstOrDefaultAsync();
 
@@ -97,6 +102,7 @@ namespace ILLVentApp.Application.Services
 			   .Where(h => h.IsAvailable)
 			   .Select(h => new Hospital
 			   {
+				   HospitalId = h.HospitalId,
 				   Name = h.Name,
 				   Description = h.Description,
 				   Thumbnail = h.Thumbnail,
@@ -106,8 +112,10 @@ namespace ILLVentApp.Application.Services
 				   ContactNumber = h.ContactNumber,
 				   Established = h.Established,
 				   Specialties = h.Specialties,
+				   IsAvailable = h.IsAvailable,
 				   Latitude = h.Latitude,
-				   Longitude = h.Longitude
+				   Longitude = h.Longitude,
+				   HasContract = h.HasContract
 			   })
 			   .ToListAsync();
 
@@ -130,6 +138,7 @@ namespace ILLVentApp.Application.Services
 			   .Where(h => h.IsAvailable && h.HasContract)
 			   .Select(h => new Hospital
 			   {
+				   HospitalId = h.HospitalId,
 				   Name = h.Name,
 				   Description = h.Description,
 				   Thumbnail = h.Thumbnail,
@@ -139,8 +148,10 @@ namespace ILLVentApp.Application.Services
 				   ContactNumber = h.ContactNumber,
 				   Established = h.Established,
 				   Specialties = h.Specialties,
+				   IsAvailable = h.IsAvailable,
 				   Latitude = h.Latitude,
-				   Longitude = h.Longitude
+				   Longitude = h.Longitude,
+				   HasContract = h.HasContract
 			   })
 			   .ToListAsync();
 
@@ -188,8 +199,5 @@ namespace ILLVentApp.Application.Services
 	   {
 		   return Math.PI * angle / 180.0;
 	   }
-
-
-	   */
 	}
 }

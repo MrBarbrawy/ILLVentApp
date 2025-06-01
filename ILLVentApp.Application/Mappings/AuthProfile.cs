@@ -48,7 +48,12 @@ namespace ILLVentApp.Application.Mappings
 
 			// Result Mapping
 			CreateMap<AuthResult, AuthResponse>()
-				.ForMember(dest => dest.Token, opt => opt.MapFrom(src => src.Token));
+				.ForMember(dest => dest.Token, opt => opt.MapFrom(src => src.Token))
+				.ForMember(dest => dest.Success, opt => opt.MapFrom(src => src.Success))
+				.ForMember(dest => dest.Message, opt => opt.MapFrom(src => src.Message))
+				.ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
+				.ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role))
+				.ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.UserName));
 		}
 
 	}

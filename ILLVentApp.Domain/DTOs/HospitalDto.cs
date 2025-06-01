@@ -4,6 +4,7 @@ namespace ILLVentApp.Domain.DTOs
 {
     public class HospitalDto
     {
+        public int HospitalId { get; set; }
         public required string Name { get; set; }
         public string? Description { get; set; }
         public string? Thumbnail { get; set; }
@@ -13,5 +14,11 @@ namespace ILLVentApp.Domain.DTOs
         public required string ContactNumber { get; set; }
         public string? Established { get; set; }
         public List<string> Specialties { get; set; } = new();
+        
+        // Additional properties for emergency service
+        public bool IsAvailable { get; set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public bool HasContract { get; set; }
     }
 }

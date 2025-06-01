@@ -12,13 +12,17 @@ namespace ILLVentApp.Domain.DTOs
 		public string Message { get; set; }
 		public string Token { get; set; }
 		public string Email { get; set; }
+		public string Role { get; set; }
+		public string UserName { get; set; }
 
-		public static AuthResult success(string token = null, string email = null) => new()
+		public static AuthResult success(string token = null, string email = null, string role = null, string userName = null) => new()
 		{
 			Success = true,
 			Message = "Operation succeeded",
 			Token = token,
-			Email = email
+			Email = email,
+			Role = role,
+			UserName = userName
 		};
 
 		public static AuthResult Failure(IEnumerable<string> errors) => new()

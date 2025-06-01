@@ -511,8 +511,22 @@ namespace ILLVentApp.Application.Services
                 
                 try
                 {
-                    // Generate QR code with the persistent token (NOT storing the QR code in user.QrCode)
+                    // Generate NEW QR code with the persistent token (creates new image each time)
                     var qrCode = await _qrCodeService.GenerateQrCodeAsync(user.QrCode);
+                    
+                    // Update medical history with new QR code if it exists
+                    var medicalHistory = await _context.MedicalHistories
+                        .FirstOrDefaultAsync(m => m.UserId == userId);
+                    
+                    if (medicalHistory != null)
+                    {
+                        medicalHistory.QrCode = qrCode;
+                        medicalHistory.QrCodeGeneratedAt = DateTime.UtcNow;
+                        medicalHistory.QrCodeExpiresAt = DateTime.UtcNow.AddYears(1);
+                        await _context.SaveChangesAsync();
+                        _logger.LogInformation("Updated medical history with new QR code for user {UserId}", userId);
+                    }
+                    
                     return QrCodeResult.Successful(qrCode, userFriendlyToken);
                 }
                 catch (Exception ex)
@@ -525,6 +539,53 @@ namespace ILLVentApp.Application.Services
             {
                 _logger.LogError(ex, "Error generating QR code for user {UserId}", userId);
                 return QrCodeResult.Failed("An error occurred while generating QR code");
+            }
+        }
+
+        public async Task<QrCodeResult> GetExistingQrCodeAsync(string userId)
+        {
+            try
+            {
+                // Check if user exists
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    return QrCodeResult.Failed("User not found");
+                }
+
+                // Check if user has an existing QR code token
+                if (string.IsNullOrEmpty(user.QrCode))
+                {
+                    _logger.LogInformation("No existing QR code token found for user {UserId}", userId);
+                    return QrCodeResult.Failed("No QR code exists for this user. Please generate one first using the /qr endpoint.");
+                }
+
+                // Check if medical history exists with stored QR code image
+                var medicalHistory = await _context.MedicalHistories
+                    .FirstOrDefaultAsync(m => m.UserId == userId);
+
+                if (medicalHistory == null || string.IsNullOrEmpty(medicalHistory.QrCode))
+                {
+                    _logger.LogInformation("No stored QR code found in medical history for user {UserId}", userId);
+                    return QrCodeResult.Failed("No existing QR code found. Please generate one first using the /qr endpoint.");
+                }
+
+                // Check if QR code is expired
+                if (medicalHistory.QrCodeExpiresAt < DateTime.UtcNow)
+                {
+                    _logger.LogInformation("Stored QR code has expired for user {UserId}", userId);
+                    return QrCodeResult.Failed("QR code has expired. Please generate a new one using the /qr endpoint.");
+                }
+
+                // Return the stored QR code image
+                string userFriendlyToken = user.QrCode.Substring(0, 8).ToUpper();
+                _logger.LogInformation("Retrieved existing QR code from medical history for user {UserId} with token: {Token}", userId, userFriendlyToken);
+                return QrCodeResult.Successful(medicalHistory.QrCode, userFriendlyToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving existing QR code for user {UserId}", userId);
+                return QrCodeResult.Failed("An error occurred while retrieving existing QR code");
             }
         }
 
@@ -883,6 +944,10 @@ namespace ILLVentApp.Application.Services
                     var limitedData = new MedicalHistoryData
                     {
                         BloodType = medicalHistoryResult.Data.BloodType,
+                        Age = medicalHistoryResult.Data.Age,
+                        Weight = medicalHistoryResult.Data.Weight,
+                        Height = medicalHistoryResult.Data.Height,
+                        Gender = medicalHistoryResult.Data.Gender,
                         HasAllergies = medicalHistoryResult.Data.HasAllergies,
                         AllergiesDetails = medicalHistoryResult.Data.HasAllergies ? medicalHistoryResult.Data.AllergiesDetails : null,
                         MedicalConditions = medicalHistoryResult.Data.MedicalConditions,
@@ -891,6 +956,8 @@ namespace ILLVentApp.Application.Services
                         DiabetesType = medicalHistoryResult.Data.HasDiabetes ? medicalHistoryResult.Data.DiabetesType : null,
                         HasHighBloodPressure = medicalHistoryResult.Data.HasHighBloodPressure,
                         HasLowBloodPressure = medicalHistoryResult.Data.HasLowBloodPressure,
+                        HasSurgeryHistory = medicalHistoryResult.Data.HasSurgeryHistory,
+                        SurgicalHistories = medicalHistoryResult.Data.SurgicalHistories,
                         // Emergency-relevant data only
                     };
                     
@@ -964,6 +1031,10 @@ namespace ILLVentApp.Application.Services
                     var limitedData = new MedicalHistoryData
                     {
                         BloodType = result.Data.BloodType,
+                        Age = result.Data.Age,
+                        Weight = result.Data.Weight,
+                        Height = result.Data.Height,
+                        Gender = result.Data.Gender,
                         HasAllergies = result.Data.HasAllergies,
                         AllergiesDetails = result.Data.HasAllergies ? result.Data.AllergiesDetails : null,
                         MedicalConditions = result.Data.MedicalConditions,
@@ -972,6 +1043,8 @@ namespace ILLVentApp.Application.Services
                         DiabetesType = result.Data.HasDiabetes ? result.Data.DiabetesType : null,
                         HasHighBloodPressure = result.Data.HasHighBloodPressure,
                         HasLowBloodPressure = result.Data.HasLowBloodPressure,
+                        HasSurgeryHistory = result.Data.HasSurgeryHistory,
+                        SurgicalHistories = result.Data.SurgicalHistories,
                         // Emergency-relevant data only
                     };
                     

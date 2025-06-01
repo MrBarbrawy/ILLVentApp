@@ -62,6 +62,45 @@ namespace ILLVentApp.Infrastructure.Services
             }
         }
 
+        public async Task<string> GenerateDeterministicQrCodeAsync(string data)
+        {
+            try
+            {
+                // Create a deterministic identifier based on the data
+                var deterministicId = GenerateDeterministicId(data);
+                var fixedTimestamp = 638000000000000000L; // Fixed timestamp for deterministic output
+
+                // Create a payload object with deterministic values
+                var payload = new
+                {
+                    Id = deterministicId,
+                    Data = data,
+                    Timestamp = fixedTimestamp
+                };
+
+                // Serialize and encrypt the payload
+                var jsonPayload = JsonSerializer.Serialize(payload);
+                var encryptedData = EncryptString(jsonPayload);
+
+                // Generate QR code
+                using (var qrGenerator = new QRCodeGenerator())
+                {
+                    var qrCodeData = qrGenerator.CreateQrCode(encryptedData, QRCodeGenerator.ECCLevel.Q);
+                    using (var qrCode = new PngByteQRCode(qrCodeData))
+                    {
+                        var qrCodeImage = qrCode.GetGraphic(20);
+                        var base64String = Convert.ToBase64String(qrCodeImage);
+                        return await Task.FromResult(base64String);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating deterministic QR code");
+                throw;
+            }
+        }
+
         public async Task<bool> ValidateQrCodeAsync(string qrCode, DateTime generatedAt, DateTime expiresAt)
         {
             try
@@ -240,6 +279,16 @@ namespace ILLVentApp.Infrastructure.Services
                 {
                     return srDecrypt.ReadToEnd();
                 }
+            }
+        }
+
+        private string GenerateDeterministicId(string data)
+        {
+            // Generate a deterministic ID based on the data using SHA256
+            using (var sha256 = SHA256.Create())
+            {
+                var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(data + _encryptionKey));
+                return Convert.ToBase64String(hash).Replace("/", "_").Replace("+", "-").Substring(0, 32);
             }
         }
 

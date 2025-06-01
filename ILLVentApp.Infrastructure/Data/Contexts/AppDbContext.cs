@@ -185,12 +185,23 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 					  .HasForeignKey(e => e.AcceptedHospitalId)
 					  .OnDelete(DeleteBehavior.Restrict);
 
+				// Required fields
 				entity.Property(e => e.RequestDescription).IsRequired();
-				entity.Property(e => e.RequestImage).HasMaxLength(255); // Encrypted URL
-				entity.Property(e => e.RequestStatus).IsRequired();
-				entity.Property(e => e.InjuryDescription).IsRequired(); // Encrypted
-				entity.Property(e => e.InjuryPhotoUrl).HasMaxLength(255); // Encrypted URL
+				entity.Property(e => e.RequestStatus).IsRequired().HasMaxLength(50);
+				entity.Property(e => e.InjuryDescription).IsRequired(); // Required - will have default value
 				entity.Property(e => e.Timestamp).IsRequired();
+				entity.Property(e => e.UserLatitude).IsRequired();
+				entity.Property(e => e.UserLongitude).IsRequired();
+				entity.Property(e => e.LocationTimestamp).IsRequired();
+				entity.Property(e => e.RequestPriority).HasDefaultValue(1);
+
+				// Optional fields (can be null or empty)
+				entity.Property(e => e.RequestImage).HasMaxLength(255); // Optional - encrypted URL
+				entity.Property(e => e.InjuryPhotoUrl).HasMaxLength(255); // Optional - encrypted URL
+				entity.Property(e => e.MedicalHistorySnapshot).HasColumnType("nvarchar(max)"); // Optional - JSON string
+				entity.Property(e => e.MedicalHistorySource).HasMaxLength(50); // Optional - source indicator
+				entity.Property(e => e.NotifiedHospitalIds).HasColumnType("nvarchar(max)"); // Optional - JSON array
+				entity.Property(e => e.RejectedByHospitalIds).HasColumnType("nvarchar(max)"); // Optional - JSON array of rejections
 			});
 		}
 

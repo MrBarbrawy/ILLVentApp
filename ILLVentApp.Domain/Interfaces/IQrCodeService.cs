@@ -13,6 +13,13 @@ namespace ILLVentApp.Domain.Interfaces
         Task<string> GenerateQrCodeAsync(string data);
 
         /// <summary>
+        /// Generates a deterministic QR code for the given data (same input = same output)
+        /// </summary>
+        /// <param name="data">The data to encode in the QR code</param>
+        /// <returns>The generated QR code as a base64 string</returns>
+        Task<string> GenerateDeterministicQrCodeAsync(string data);
+
+        /// <summary>
         /// Validates if a QR code is still valid (not expired and properly encrypted)
         /// </summary>
         /// <param name="qrCode">The QR code to validate</param>

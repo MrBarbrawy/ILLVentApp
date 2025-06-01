@@ -217,8 +217,14 @@ public class AuthService : IAuthService
 		if (!user.IsEmailVerified)
 			return AuthResult.Failure("Email not verified");
 
+		// Get user roles
+		var roles = await _userManager.GetRolesAsync(user);
+		var primaryRole = roles.FirstOrDefault() ?? "User";
+
 		var token = _jwtService.GenerateToken(user);
-		return AuthResult.success(token: token, email: user.Email);
+		var userName = $"{user.FirstName} {user.Surname}";
+		
+		return AuthResult.success(token: token, email: user.Email, role: primaryRole, userName: userName);
 	}
 
 	public async Task<AuthResult> InitiatePasswordResetAsync(string email)

@@ -225,60 +225,9 @@ namespace ILLVentApp.Application.Services
             return availableDays;
         }
 
-        private void CleanupCache()
-        {
-            lock (_cacheLock)
-            {
-                var today = DateTime.Today;
-                var keysToRemove = _timeSlotCache.Keys
-                    .Where(key => DateTime.ParseExact(key.Split('_')[1], "yyyyMMdd", null) < today)
-                    .ToList();
-
-                foreach (var key in keysToRemove)
-                {
-                    _timeSlotCache.Remove(key);
-                }
-            }
-        }
-
-        private List<TimeSlotDTO> GenerateTimeSlots(Doctor doctor, DateTime date, TimeSpan offset)
-        {
-            var slots = new List<TimeSlotDTO>();
-            var currentTime = doctor.StartTime;
-
-            while (currentTime.Add(TimeSpan.FromMinutes(doctor.SlotDurationMinutes)) <= doctor.EndTime)
-            {
-                // Create DateTimeOffset to properly handle the timezone
-                var startDateTimeOffset = new DateTimeOffset(
-                    date.Year, date.Month, date.Day,
-                    currentTime.Hours, currentTime.Minutes, 0,
-                    offset);
-
-                var endDateTimeOffset = startDateTimeOffset.AddMinutes(doctor.SlotDurationMinutes);
-                
-                slots.Add(new TimeSlotDTO
-                {
-                    StartTime = startDateTimeOffset.DateTime,
-                    EndTime = endDateTimeOffset.DateTime,
-                    IsReserved = false,
-                    FormattedStartTime = FormatDateTime(startDateTimeOffset.DateTime),
-                    FormattedEndTime = FormatDateTime(endDateTimeOffset.DateTime)
-                });
-
-                currentTime = currentTime.Add(TimeSpan.FromMinutes(doctor.SlotDurationMinutes));
-            }
-
-            return slots;
-        }
-
         private string FormatTime(TimeSpan time)
         {
             return DateTime.Today.Add(time).ToString("hh:mm tt"); // Returns time in "09:00 AM" format
-        }
-
-        private string FormatDateTime(DateTime dateTime)
-        {
-            return dateTime.ToString("dddd, MMMM d, yyyy hh:mm tt");
         }
 
         public async Task<AppointmentResponseDTO> CreateAppointmentAsync(AppointmentRequestWithUser appointmentRequest)

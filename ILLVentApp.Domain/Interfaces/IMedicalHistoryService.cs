@@ -18,6 +18,9 @@ namespace ILLVentApp.Domain.Interfaces
         // Generate QR code data for a user ID
         Task<QrCodeResult> GenerateQrCodeAsync(string userId);
         
+        // Get existing QR code data for a user ID without regenerating
+        Task<QrCodeResult> GetExistingQrCodeAsync(string userId);
+        
         // SECURE ACCESS: Get medical history using QR code data - requires ownership validation
         Task<MedicalHistoryResult> GetMedicalHistoryByQrCodeAsync(string qrCodeData, string userId);
 

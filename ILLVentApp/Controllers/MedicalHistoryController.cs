@@ -124,6 +124,7 @@ namespace ILLVentApp.Controllers
         }
 
         // GET: api/MedicalHistory/qr
+        // Generates a NEW QR code (refreshes existing one)
         [HttpGet("qr")]
         [Authorize]
         public async Task<IActionResult> GenerateQrCode()
@@ -135,6 +136,22 @@ namespace ILLVentApp.Controllers
             var result = await _medicalHistoryService.GenerateQrCodeAsync(userId);
             if (!result.Success)
                 return BadRequest(result);
+            return Ok(result);
+        }
+
+        // GET: api/MedicalHistory/qr/existing
+        // Returns the existing stored QR code (or error if none exists/expired)
+        [HttpGet("qr/existing")]
+        [Authorize]
+        public async Task<IActionResult> GetExistingQrCode()
+        {
+            var userId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+
+            var result = await _medicalHistoryService.GetExistingQrCodeAsync(userId);
+            if (!result.Success)
+                return NotFound(result);
             return Ok(result);
         }
 

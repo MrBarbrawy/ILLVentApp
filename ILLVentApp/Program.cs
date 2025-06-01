@@ -124,7 +124,7 @@ namespace ILLVentApp
             // Configure Stripe
             StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
-            builder.Services.AddAutoMapper(typeof(AuthProfile), typeof(ProductProfile), typeof(OrderProfile));
+            builder.Services.AddAutoMapper(typeof(AuthProfile), typeof(ProductProfile), typeof(OrderProfile), typeof(HospitalProfile));
 
             builder.Services.AddHttpContextAccessor();
 
@@ -150,6 +150,7 @@ namespace ILLVentApp
            .AddScoped<IProductService,Application.Services.ProductService>()
            .AddScoped<ICartService, CartService>()
            .AddScoped<IOrderService, OrderService>()
+           .AddScoped<IEmergencyRequestService, EmergencyRequestService>()
            .AddScoped<IQrCodeService>(provider => 
                new QrCodeService(
                    provider.GetRequiredService<ILogger<QrCodeService>>(),
@@ -196,6 +197,9 @@ namespace ILLVentApp
                 
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
+
+            // Add SignalR for real-time emergency communication
+            builder.Services.AddSignalR();
 
             var app = builder.Build();
 
@@ -267,6 +271,9 @@ namespace ILLVentApp
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
+                
+                // Map SignalR Emergency Hub
+                endpoints.MapHub<ILLVentApp.Application.Hubs.EmergencyHub>("/emergencyHub");
             });
 
             app.Run();
