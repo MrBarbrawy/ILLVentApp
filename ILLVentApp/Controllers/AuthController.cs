@@ -59,31 +59,6 @@ namespace ILLVentApp.Controllers
 			return ResultHandler(result);
 		}
 
-		[HttpPost("assign-hospital-role")]
-		// Temporarily removing authorization for testing - TODO: Add back [Authorize(Roles = "Admin")]
-		public async Task<IActionResult> AssignHospitalRole([FromBody] AssignRoleRequest request)
-		{
-			try
-			{
-				var user = await _userManager.FindByEmailAsync(request.Email);
-				if (user == null)
-					return NotFound(new { success = false, message = "User not found" });
-
-				var result = await _userManager.AddToRoleAsync(user, "Hospital");
-				if (result.Succeeded)
-				{
-					_logger.LogInformation("Hospital role assigned to user {Email}", request.Email);
-					return Ok(new { success = true, message = "Hospital role assigned successfully" });
-				}
-
-				return BadRequest(new { success = false, message = string.Join(", ", result.Errors.Select(e => e.Description)) });
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError(ex, "Error assigning hospital role to {Email}", request.Email);
-				return StatusCode(500, new { success = false, message = "Error assigning role" });
-			}
-		}
 
 		[HttpPost("request-password-reset")]
 		public async Task<IActionResult> RequestPasswordReset([FromBody] string email)

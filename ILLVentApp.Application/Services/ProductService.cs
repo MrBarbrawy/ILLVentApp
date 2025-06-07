@@ -53,20 +53,77 @@ namespace ILLVentApp.Application.Services
 
         public async Task<Product> AddProductAsync(ProductDto productDto)
         {
-            // This method will be implemented in admin dashboard later
-            throw new NotImplementedException("Method will be implemented in admin dashboard");
+            var product = new Product
+            {
+                Name = productDto.Name,
+                Description = productDto.Description,
+                Price = productDto.Price,
+                ImageUrl = productDto.ImageUrl ?? "",
+                Thumbnail = productDto.Thumbnail ?? productDto.ImageUrl ?? "",
+                Rating = productDto.Rating,
+                ProductType = productDto.ProductType ?? "General",
+                HasNFC = productDto.HasNFC,
+                HasMedicalDataStorage = productDto.HasMedicalDataStorage,
+                HasRescueProtocol = productDto.HasRescueProtocol,
+                HasVitalSensors = productDto.HasVitalSensors,
+                TechnicalDetails = productDto.TechnicalDetails ?? "",
+                StockQuantity = productDto.StockQuantity,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Products.Add(product);
+            await _context.SaveChangesAsync();
+
+            return product;
         }
 
         public async Task<Product> UpdateProductAsync(int productId, ProductDto productDto)
         {
-            // This method will be implemented in admin dashboard later
-            throw new NotImplementedException("Method will be implemented in admin dashboard");
+            var product = await _context.Products
+                .FirstOrDefaultAsync(p => p.ProductId == productId);
+
+            if (product == null)
+                return null;
+
+            product.Name = productDto.Name;
+            product.Description = productDto.Description;
+            product.Price = productDto.Price;
+            product.ProductType = productDto.ProductType ?? "General";
+            product.StockQuantity = productDto.StockQuantity;
+            product.UpdatedAt = DateTime.UtcNow;
+
+            // Only update image URL if a new one is provided
+            if (!string.IsNullOrEmpty(productDto.ImageUrl))
+            {
+                product.ImageUrl = productDto.ImageUrl;
+                product.Thumbnail = productDto.Thumbnail ?? productDto.ImageUrl;
+            }
+
+            // Update optional features if provided
+            if (productDto.HasNFC != default) product.HasNFC = productDto.HasNFC;
+            if (productDto.HasMedicalDataStorage != default) product.HasMedicalDataStorage = productDto.HasMedicalDataStorage;
+            if (productDto.HasRescueProtocol != default) product.HasRescueProtocol = productDto.HasRescueProtocol;
+            if (productDto.HasVitalSensors != default) product.HasVitalSensors = productDto.HasVitalSensors;
+            if (!string.IsNullOrEmpty(productDto.TechnicalDetails)) product.TechnicalDetails = productDto.TechnicalDetails;
+
+            await _context.SaveChangesAsync();
+
+            return product;
         }
 
         public async Task<bool> DeleteProductAsync(int productId)
         {
-            // This method will be implemented in admin dashboard later
-            throw new NotImplementedException("Method will be implemented in admin dashboard");
+            var product = await _context.Products
+                .FirstOrDefaultAsync(p => p.ProductId == productId);
+
+            if (product == null)
+                return false;
+
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+
+            return true;
         }
 
         private Product AddFullUrls(Product product)

@@ -4,7 +4,7 @@ using ILLVentApp.Domain.Interfaces;
 using ILLVentApp.Domain.Models;
 using ILLVentApp.Infrastructure.Configuration;
 using ILLVentApp.Infrastructure.Data.Contexts;
-using ILLVentApp.Infrastructure.Data.Seeding;
+
 using ILLVentApp.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -113,6 +113,17 @@ namespace ILLVentApp
                     {
                         var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
                         logger.LogInformation("Token validated successfully");
+                        
+                        // Debug: Log all claims in the token
+                        foreach (var claim in context.Principal.Claims)
+                        {
+                            logger.LogInformation("Claim: {Type} = {Value}", claim.Type, claim.Value);
+                        }
+                        
+                        // Debug: Check if user is in Admin role
+                        var isInAdminRole = context.Principal.IsInRole("Admin");
+                        logger.LogInformation("User is in Admin role: {IsInAdminRole}", isInAdminRole);
+                        
                         return Task.CompletedTask;
                     }
                 };
@@ -214,42 +225,7 @@ namespace ILLVentApp
 					c.SwaggerEndpoint("/swagger/v1/swagger.json", "IllVent API v1");
 				});
                 
-                // Seed data in development
-                using (var scope = app.Services.CreateScope())
-                {
-                    var serviceProvider = scope.ServiceProvider;
-                    try
-                    {
-                         // Seed roles first
-                         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-                         var logger = serviceProvider.GetRequiredService<ILogger<ILLVentApp.Infrastructure.Data.Seeding.RoleSeeder>>();
-                         var roleSeeder = new ILLVentApp.Infrastructure.Data.Seeding.RoleSeeder(roleManager, logger);
-                         roleSeeder.SeedRolesAsync().Wait();
-                         
-                         // Migrate existing users to standard roles
-                         var userManager = serviceProvider.GetRequiredService<UserManager<User>>();
-                         var dbContext = serviceProvider.GetRequiredService<AppDbContext>();
-                         var migrationLogger = serviceProvider.GetRequiredService<ILogger<ILLVentApp.Infrastructure.Data.Seeding.ExistingUserRoleMigrator>>();
-                         var userMigrator = new ILLVentApp.Infrastructure.Data.Seeding.ExistingUserRoleMigrator(userManager, roleManager, dbContext, migrationLogger);
-                         userMigrator.MigrateExistingUsersAsync().Wait();
-                         
-                         ILLVentApp.Infrastructure.Data.Seeding.HospitalDataSeeder.SeedHospitalData(serviceProvider);
-                         ILLVentApp.Infrastructure.Data.Seeding.HospitalImageSeeder.SeedHospitalImages(serviceProvider);
-                         ILLVentApp.Infrastructure.Data.Seeding.PharmacyDataSeeder.SeedPharmacyData(serviceProvider);
-                         ILLVentApp.Infrastructure.Data.Seeding.PharmacyImageSeeder.SeedPharmacyImages(serviceProvider);
-                         ILLVentApp.Infrastructure.Data.Seeding.DoctorDataSeeder.SeedDoctorData(serviceProvider);
-                         ILLVentApp.Infrastructure.Data.Seeding.DoctorImageSeeder.SeedDoctorImages(serviceProvider);
-                         
-                         // Seed product data
-                         var dbContext2 = serviceProvider.GetRequiredService<IAppDbContext>();
-                         ProductSeeder.SeedProductsAsync(dbContext2).Wait();
-                    }
-                    catch (Exception ex)
-                    {
-                        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
-                        logger.LogError(ex, "An error occurred while seeding the database.");
-                    }
-                }
+
 			}
 
             app.UseHttpsRedirection();

@@ -28,6 +28,7 @@ namespace ILLVentApp.Application.Services
             var pharmacies = await _context.Set<Pharmacy>()
                 .Select(p => new Pharmacy
                 {
+                    PharmacyId = p.PharmacyId,
                     Name = p.Name,
                     Description = p.Description,
                     Thumbnail = p.Thumbnail,
@@ -35,7 +36,8 @@ namespace ILLVentApp.Application.Services
                     Location = p.Location,
                     Rating = p.Rating,
                     ContactNumber = p.ContactNumber,
-                    AcceptPrivateInsurance = p.AcceptPrivateInsurance
+                    AcceptPrivateInsurance = p.AcceptPrivateInsurance,
+                    HasContract = p.HasContract
                 })
                 .ToListAsync();
 
@@ -56,6 +58,38 @@ namespace ILLVentApp.Application.Services
                 pharmacy.ImageUrl = $"{AzureBaseUrl}{pharmacy.ImageUrl}";
             }
             return pharmacy;
+        }
+
+        public async Task<PharmacyDto> CreatePharmacyAsync(CreatePharmacyDto pharmacyDto)
+        {
+            var pharmacy = new Pharmacy
+            {
+                Name = pharmacyDto.Name,
+                Description = pharmacyDto.Description,
+                Thumbnail = pharmacyDto.Thumbnail,
+                ImageUrl = pharmacyDto.ImageUrl,
+                Location = pharmacyDto.Location,
+                Rating = pharmacyDto.Rating,
+                ContactNumber = pharmacyDto.ContactNumber,
+                AcceptPrivateInsurance = pharmacyDto.AcceptPrivateInsurance,
+                HasContract = pharmacyDto.HasContract
+            };
+
+            _context.Set<Pharmacy>().Add(pharmacy);
+            await _context.SaveChangesAsync();
+
+            return _mapper.Map<PharmacyDto>(pharmacy);
+        }
+
+        public async Task<bool> DeletePharmacyAsync(int pharmacyId)
+        {
+            var pharmacy = await _context.Set<Pharmacy>().FindAsync(pharmacyId);
+            if (pharmacy == null)
+                return false;
+
+            _context.Set<Pharmacy>().Remove(pharmacy);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 } 

@@ -267,24 +267,30 @@ namespace ILLVentApp.Application.Services
                     // Get hospital details
                     var hospital = await _context.Hospitals.FindAsync(response.HospitalId);
 
-                    // Notify user via SignalR
-                    await _hubContext.Clients.Group($"User_{request.UserId}")
-                        .SendAsync("HospitalAccepted", new
+                    var hospitalAcceptedData = new
+                    {
+                        RequestId = request.RequestId,
+                        Hospital = new
                         {
-                            RequestId = request.RequestId,
-                            Hospital = new
-                            {
-                                hospital.HospitalId,
-                                hospital.Name,
-                                hospital.Location,
-                                hospital.ContactNumber,
-                                hospital.Latitude,
-                                hospital.Longitude
-                            },
-                            EstimatedResponseTime = response.EstimatedResponseTimeMinutes ?? 15, // Default to 15 minutes if not provided
-                            AmbulanceAvailable = response.AmbulanceAvailable,
-                            Message = response.ResponseMessage
-                        });
+                            hospital.HospitalId,
+                            hospital.Name,
+                            hospital.Location,
+                            hospital.ContactNumber,
+                            hospital.Latitude,
+                            hospital.Longitude
+                        },
+                        EstimatedResponseTime = response.EstimatedResponseTimeMinutes ?? 15, // Default to 15 minutes if not provided
+                        AmbulanceAvailable = response.AmbulanceAvailable,
+                        Message = response.ResponseMessage
+                    };
+
+                    // Notify user via SignalR (existing notification)
+                    await _hubContext.Clients.Group($"User_{request.UserId}")
+                        .SendAsync("HospitalAccepted", hospitalAcceptedData);
+
+                    // Notify request-specific group (for mobile app real-time updates)
+                    await _hubContext.Clients.Group($"Emergency_{request.RequestId}")
+                        .SendAsync("HospitalAccepted", hospitalAcceptedData);
 
                     _logger.LogInformation("Emergency request {RequestId} accepted by hospital {HospitalId}", 
                         response.RequestId, response.HospitalId);

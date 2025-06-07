@@ -1,0 +1,1901 @@
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - ILLVent Admin</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --admin-primary: #1a365d;
+            --admin-secondary: #2d3748;
+            --admin-accent: #3182ce;
+            --admin-success: #38a169;
+            --admin-warning: #ed8936;
+            --admin-danger: #e53e3e;
+            --admin-light: #f7fafc;
+            --admin-border: #e2e8f0;
+            --admin-text: #2d3748;
+            --admin-text-light: #718096;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--admin-text);
+        }
+        
+        .admin-navbar {
+            background: linear-gradient(135deg, var(--admin-primary) 0%, var(--admin-secondary) 100%);
+            box-shadow: 0 4px 20px rgba(26, 54, 93, 0.15);
+            border: none;
+            padding: 1rem 0;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.025em;
+        }
+        
+        .sidebar {
+            min-height: calc(100vh - 72px);
+            background: white;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.08);
+            border-right: 1px solid var(--admin-border);
+        }
+        
+        .nav-link.admin-nav {
+            color: var(--admin-text-light);
+            padding: 14px 20px;
+            border-radius: 10px;
+            margin: 3px 12px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+        
+        .nav-link.admin-nav:hover {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            color: var(--admin-primary);
+            border-color: var(--admin-border);
+            transform: translateX(3px);
+        }
+        
+        .nav-link.admin-nav.active {
+            background: linear-gradient(135deg, var(--admin-primary) 0%, var(--admin-accent) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(49, 130, 206, 0.3);
+            border-color: transparent;
+        }
+        
+        .nav-link.admin-nav.active i {
+            transform: scale(1.1);
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.08);
+            border: 1px solid var(--admin-border);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--admin-accent), var(--admin-success));
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 35px rgba(0,0,0,0.12);
+        }
+        
+        .stat-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-icon::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: rgba(255,255,255,0.1);
+            transform: rotate(45deg);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover .stat-icon::before {
+            transform: rotate(45deg) translate(50%, 50%);
+        }
+        
+        .content-area {
+            padding: 24px;
+        }
+        
+        .page-header {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1px solid var(--admin-border);
+            margin-bottom: 24px;
+        }
+        
+        .page-header h2 {
+            font-weight: 700;
+            font-size: 1.75rem;
+            letter-spacing: -0.025em;
+            color: var(--admin-text);
+        }
+        
+        .page-header p {
+            font-size: 1rem;
+            color: var(--admin-text-light);
+        }
+        
+        .btn-admin-primary {
+            background: linear-gradient(135deg, var(--admin-primary) 0%, var(--admin-accent) 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 15px rgba(49, 130, 206, 0.3);
+            transition: all 0.2s ease;
+        }
+        
+        .btn-admin-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(49, 130, 206, 0.4);
+            background: linear-gradient(135deg, var(--admin-accent) 0%, var(--admin-primary) 100%);
+        }
+        
+        .table {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1px solid var(--admin-border);
+        }
+        
+        .table thead th {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: none;
+            font-weight: 600;
+            color: var(--admin-text);
+            padding: 16px;
+            font-size: 0.9rem;
+            letter-spacing: 0.025em;
+        }
+        
+        .table tbody td {
+            padding: 16px;
+            border-color: var(--admin-border);
+            vertical-align: middle;
+        }
+        
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .btn-sm {
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-weight: 500;
+        }
+        
+        .modal-content {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, var(--admin-primary) 0%, var(--admin-accent) 100%);
+            color: white;
+            border-radius: 16px 16px 0 0;
+            padding: 20px 24px;
+        }
+        
+        .modal-header .btn-close {
+            filter: invert(1);
+        }
+        
+        .modal-body {
+            padding: 24px;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid var(--admin-border);
+            padding: 12px 16px;
+            transition: all 0.2s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--admin-accent);
+            box-shadow: 0 0 0 0.2rem rgba(49, 130, 206, 0.15);
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: var(--admin-text);
+            margin-bottom: 8px;
+        }
+        
+        .alert {
+            border-radius: 12px;
+            border: none;
+            padding: 16px 20px;
+        }
+        
+        .badge {
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-weight: 500;
+        }
+        
+        .progress {
+            border-radius: 10px;
+            height: 8px;
+        }
+        
+        .dropdown-menu {
+            border-radius: 12px;
+            border: 1px solid var(--admin-border);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            padding: 8px;
+        }
+        
+        .dropdown-item {
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-weight: 500;
+        }
+        
+        .dropdown-item:hover {
+            background-color: var(--admin-light);
+        }
+        
+        /* Dark mode for navbar dropdown */
+        .navbar .dropdown-menu {
+            background: var(--admin-secondary);
+            border-color: rgba(255,255,255,0.1);
+        }
+        
+        .navbar .dropdown-item {
+            color: #fff;
+        }
+        
+        .navbar .dropdown-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .navbar .dropdown-divider {
+            border-color: rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg admin-navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand text-white fw-bold" href="#">
+                <i class="fas fa-user-shield me-2"></i>ILLVent Admin
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle me-2"></i>Administrator
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" asp-action="Logout" class="d-inline">
+                                <button type="submit" class="dropdown-item">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="position-sticky pt-3">
+                    <ul class="nav nav-pills flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link admin-nav active" href="#" data-section="dashboard">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link admin-nav" href="#" data-section="products">
+                                <i class="fas fa-box me-2"></i>Products
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link admin-nav" href="#" data-section="users">
+                                <i class="fas fa-users me-2"></i>Users & Roles
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link admin-nav" href="#" data-section="hospitals">
+                                <i class="fas fa-hospital me-2"></i>Hospitals
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link admin-nav" href="#" data-section="pharmacies">
+                                <i class="fas fa-pills me-2"></i>Pharmacies
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link admin-nav" href="#" data-section="logs">
+                                <i class="fas fa-list-alt me-2"></i>System Logs
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 content-area">
+                <!-- Dashboard Section -->
+                <div id="dashboard-section" class="content-section">
+                    <div class="page-header">
+                        <h2 class="mb-0">
+                            <i class="fas fa-tachometer-alt text-primary me-3"></i>Admin Dashboard
+                        </h2>
+                        <p class="text-muted mb-0">System overview and quick actions</p>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="stat-card p-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon" style="background: var(--admin-accent);">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <div class="ms-3">
+                                        <h4 class="mb-1" id="totalUsers">--</h4>
+                                        <p class="text-muted mb-0">Total Users</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="stat-card p-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon" style="background: var(--admin-success);">
+                                        <i class="fas fa-box"></i>
+                                    </div>
+                                    <div class="ms-3">
+                                        <h4 class="mb-1" id="totalProducts">--</h4>
+                                        <p class="text-muted mb-0">Products</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="stat-card p-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon" style="background: var(--admin-danger);">
+                                        <i class="fas fa-hospital"></i>
+                                    </div>
+                                    <div class="ms-3">
+                                        <h4 class="mb-1" id="totalHospitals">--</h4>
+                                        <p class="text-muted mb-0">Hospitals</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="stat-card p-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon" style="background: var(--admin-warning);">
+                                        <i class="fas fa-pills"></i>
+                                    </div>
+                                    <div class="ms-3">
+                                        <h4 class="mb-1" id="totalPharmacies">--</h4>
+                                        <p class="text-muted mb-0">Pharmacies</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="stat-card p-4">
+                                <h5 class="mb-3">Quick Actions</h5>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <button class="btn btn-admin-primary action-btn w-100" onclick="showSection('products')">
+                                            <i class="fas fa-plus me-2"></i>Add Product
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <button class="btn btn-outline-primary action-btn w-100" onclick="showSection('users')">
+                                            <i class="fas fa-user-plus me-2"></i>Manage Users
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <button class="btn btn-outline-success action-btn w-100" onclick="showSection('hospitals')">
+                                            <i class="fas fa-hospital me-2"></i>Add Hospital
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Section -->
+                <div id="products-section" class="content-section" style="display: none;">
+                    <div class="page-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h2 class="mb-0">
+                                    <i class="fas fa-box text-success me-3"></i>Product Management
+                                </h2>
+                                <p class="text-muted mb-0">Manage products in the system</p>
+                            </div>
+                            <button class="btn btn-admin-primary" onclick="showAddProductModal()">
+                                <i class="fas fa-plus me-2"></i>Add Product
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card p-4">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="productsTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 80px;">ID</th>
+                                        <th style="width: 40%;">Product</th>
+                                        <th style="width: 15%;">Category</th>
+                                        <th style="width: 15%;">Price</th>
+                                        <th style="width: 10%;">Stock</th>
+                                        <th style="width: 15%;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="6" class="text-center">Loading products...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Section -->
+                <div id="users-section" class="content-section" style="display: none;">
+                    <div class="page-header">
+                        <h2 class="mb-0">
+                            <i class="fas fa-users text-info me-3"></i>User & Role Management
+                        </h2>
+                        <p class="text-muted mb-0">Manage users and assign roles</p>
+                    </div>
+                    
+                    <div class="stat-card p-4">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="usersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>Name</th>
+                                        <th>Roles</th>
+                                        <th>Created</th>
+                                        <th>Verified</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="6" class="text-center">Loading users...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hospitals Section -->
+                <div id="hospitals-section" class="content-section" style="display: none;">
+                    <div class="page-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h2 class="mb-0">
+                                    <i class="fas fa-hospital text-danger me-3"></i>Hospital Management
+                                </h2>
+                                <p class="text-muted mb-0">Manage registered hospitals</p>
+                            </div>
+                            <button class="btn btn-admin-primary" onclick="showAddHospitalModal()">
+                                <i class="fas fa-plus me-2"></i>Add Hospital
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card p-4">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="hospitalsTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Address</th>
+                                        <th>Phone</th>
+                                        <th>Email</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="6" class="text-center">Loading hospitals...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pharmacies Section -->
+                <div id="pharmacies-section" class="content-section" style="display: none;">
+                    <div class="page-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h2 class="mb-0">
+                                    <i class="fas fa-pills text-warning me-3"></i>Pharmacy Management
+                                </h2>
+                                <p class="text-muted mb-0">Manage registered pharmacies</p>
+                            </div>
+                            <button class="btn btn-admin-primary" onclick="showAddPharmacyModal()">
+                                <i class="fas fa-plus me-2"></i>Add Pharmacy
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card p-4">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="pharmaciesTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Address</th>
+                                        <th>Phone</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="5" class="text-center">Loading pharmacies...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logs Section -->
+                <div id="logs-section" class="content-section" style="display: none;">
+                    <div class="page-header">
+                        <h2 class="mb-0">
+                            <i class="fas fa-list-alt text-secondary me-3"></i>System Logs
+                        </h2>
+                        <p class="text-muted mb-0">View system activity and logs</p>
+                    </div>
+                    
+                    <div class="stat-card p-4">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="logsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Level</th>
+                                        <th>Category</th>
+                                        <th>Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="4" class="text-center">Loading logs...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals will be added here by JavaScript -->
+    <div id="modalContainer"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Global variables
+        let currentSection = 'dashboard';
+        
+        // Check authentication and get headers
+        function checkAuthentication() {
+            const token = localStorage.getItem('authToken');
+            const role = localStorage.getItem('userRole');
+            
+            console.log('Checking authentication...');
+            console.log('Token exists:', !!token);
+            console.log('Role:', role);
+            
+            if (token) {
+                // Debug: decode JWT token to see claims
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    console.log('JWT payload:', payload);
+                } catch (e) {
+                    console.error('Error decoding JWT:', e);
+                }
+            }
+            
+            if (!token || role !== 'Admin') {
+                alert('Authentication required. Redirecting to login...');
+                window.location.href = '/AdminView/Login';
+                return false;
+            }
+            return true;
+        }
+        
+        function getAuthHeaders() {
+            const token = localStorage.getItem('authToken');
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!checkAuthentication()) return;
+            
+            loadDashboardStats();
+            
+            // Setup navigation
+            document.querySelectorAll('.admin-nav').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const section = this.getAttribute('data-section');
+                    showSection(section);
+                });
+            });
+        });
+        
+        // Navigation functions
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Remove active class from all nav links
+            document.querySelectorAll('.admin-nav').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + '-section').style.display = 'block';
+            
+            // Add active class to selected nav link
+            document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
+            
+            currentSection = sectionName;
+            
+            // Load section data
+            loadSectionData(sectionName);
+        }
+        
+        // Load dashboard statistics
+        async function loadDashboardStats() {
+            try {
+                const headers = getAuthHeaders();
+                const responses = await Promise.all([
+                    fetch('/api/admin/users', { headers }),
+                    fetch('/api/admin/products', { headers }),
+                    fetch('/api/admin/hospitals', { headers }),
+                    fetch('/api/admin/pharmacies', { headers })
+                ]);
+                
+                const [users, products, hospitals, pharmacies] = await Promise.all(
+                    responses.map(r => r.json())
+                );
+                
+                document.getElementById('totalUsers').textContent = users.success ? users.data.length : '0';
+                document.getElementById('totalProducts').textContent = products.success ? products.data.length : '0';
+                document.getElementById('totalHospitals').textContent = hospitals.success ? hospitals.data.length : '0';
+                document.getElementById('totalPharmacies').textContent = pharmacies.success ? pharmacies.data.length : '0';
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+            }
+        }
+        
+        // Load section-specific data
+        async function loadSectionData(section) {
+            switch(section) {
+                case 'products':
+                    await loadProducts();
+                    break;
+                case 'users':
+                    await loadUsers();
+                    break;
+                case 'hospitals':
+                    await loadHospitals();
+                    break;
+                case 'pharmacies':
+                    await loadPharmacies();
+                    break;
+                case 'logs':
+                    await loadLogs();
+                    break;
+            }
+        }
+        
+        // Load products
+        async function loadProducts() {
+            try {
+                const response = await fetch('/api/admin/products', { headers: getAuthHeaders() });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                const tbody = document.querySelector('#productsTable tbody');
+                if (result.success && result.data.length > 0) {
+                    tbody.innerHTML = result.data.map(product => `
+                        <tr>
+                            <td>${product.productId || product.id}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    ${product.imageUrl ? `<img src="${product.imageUrl}" alt="${product.name}" style="width: 40px; height: 40px; object-fit: cover;" class="rounded me-2">` : '<div class="bg-light rounded me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="fas fa-image text-muted"></i></div>'}
+                                    <div>
+                                        <div class="fw-medium">${product.name}</div>
+                                        ${product.description ? `<small class="text-muted">${product.description.substring(0, 50)}${product.description.length > 50 ? '...' : ''}</small>` : ''}
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-secondary">${product.productType || product.category || 'N/A'}</span></td>
+                            <td class="fw-medium text-success">$${parseFloat(product.price || 0).toFixed(2)}</td>
+                            <td>
+                                <span class="badge ${(product.stockQuantity || 0) > 10 ? 'bg-success' : (product.stockQuantity || 0) > 0 ? 'bg-warning' : 'bg-danger'}">
+                                    ${product.stockQuantity || 0}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editProduct(${product.productId || product.id})" title="Edit Product">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${product.productId || product.id})" title="Delete Product">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">No products found</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading products:', error);
+                console.error('Full error details:', error);
+                document.querySelector('#productsTable tbody').innerHTML = 
+                    '<tr><td colspan="6" class="text-center text-danger">Error loading products: ' + error.message + '</td></tr>';
+            }
+        }
+        
+        // Load users
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/admin/users', { headers: getAuthHeaders() });
+                const result = await response.json();
+                
+                const tbody = document.querySelector('#usersTable tbody');
+                if (result.success && result.data.length > 0) {
+                    tbody.innerHTML = result.data.map(user => `
+                        <tr>
+                            <td>${user.email}</td>
+                            <td>${user.firstName} ${user.surname}</td>
+                            <td>
+                                ${user.roles.map(role => `<span class="badge bg-secondary me-1">${role}</span>`).join('')}
+                            </td>
+                            <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                            <td>
+                                <span class="badge bg-${user.isEmailVerified ? 'success' : 'warning'}">
+                                    ${user.isEmailVerified ? 'Verified' : 'Pending'}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="manageUserRoles('${user.id}', '${user.email}')">
+                                    <i class="fas fa-user-tag"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">No users found</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.querySelector('#usersTable tbody').innerHTML = 
+                    '<tr><td colspan="6" class="text-center text-danger">Error loading users</td></tr>';
+            }
+        }
+        
+        // Load hospitals
+        async function loadHospitals() {
+            try {
+                const response = await fetch('/api/admin/hospitals', { headers: getAuthHeaders() });
+                const result = await response.json();
+                
+                const tbody = document.querySelector('#hospitalsTable tbody');
+                if (result.success && result.data.length > 0) {
+                    tbody.innerHTML = result.data.map(hospital => `
+                        <tr>
+                            <td>${hospital.id}</td>
+                            <td>${hospital.name}</td>
+                            <td>${hospital.address || 'N/A'}</td>
+                            <td>${hospital.phone || 'N/A'}</td>
+                            <td>${hospital.email || 'N/A'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteHospital(${hospital.id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hospitals found</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading hospitals:', error);
+                document.querySelector('#hospitalsTable tbody').innerHTML = 
+                    '<tr><td colspan="6" class="text-center text-danger">Error loading hospitals</td></tr>';
+            }
+        }
+        
+        // Load pharmacies
+        async function loadPharmacies() {
+            try {
+                const response = await fetch('/api/admin/pharmacies', { headers: getAuthHeaders() });
+                const result = await response.json();
+                
+                const tbody = document.querySelector('#pharmaciesTable tbody');
+                if (result.success && result.data.length > 0) {
+                    tbody.innerHTML = result.data.map(pharmacy => `
+                        <tr>
+                            <td>${pharmacy.id}</td>
+                            <td>${pharmacy.name}</td>
+                            <td>${pharmacy.address || 'N/A'}</td>
+                            <td>${pharmacy.phone || 'N/A'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deletePharmacy(${pharmacy.id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">No pharmacies found</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading pharmacies:', error);
+                document.querySelector('#pharmaciesTable tbody').innerHTML = 
+                    '<tr><td colspan="5" class="text-center text-danger">Error loading pharmacies</td></tr>';
+            }
+        }
+        
+        // Load logs
+        async function loadLogs() {
+            try {
+                const response = await fetch('/api/admin/logs', { headers: getAuthHeaders() });
+                const result = await response.json();
+                
+                const tbody = document.querySelector('#logsTable tbody');
+                if (result.success && result.data.length > 0) {
+                    tbody.innerHTML = result.data.map(log => `
+                        <tr>
+                            <td>${new Date(log.timestamp).toLocaleString()}</td>
+                            <td>
+                                <span class="badge bg-${getLevelColor(log.level)}">${log.level}</span>
+                            </td>
+                            <td>${log.category}</td>
+                            <td>${log.message}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">No logs found</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading logs:', error);
+                document.querySelector('#logsTable tbody').innerHTML = 
+                    '<tr><td colspan="4" class="text-center text-danger">Error loading logs</td></tr>';
+            }
+        }
+        
+        function getLevelColor(level) {
+            switch(level.toLowerCase()) {
+                case 'error': return 'danger';
+                case 'warning': return 'warning';
+                case 'info': return 'info';
+                default: return 'secondary';
+            }
+        }
+        
+        // Modal functions
+        function showAddProductModal() {
+            const modalHtml = `
+                <div class="modal fade" id="addProductModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Add New Product</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="addProductForm">
+                                    <div class="mb-3">
+                                        <label for="productName" class="form-label">Product Name</label>
+                                        <input type="text" class="form-control" id="productName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="productDescription" class="form-label">Description</label>
+                                        <textarea class="form-control" id="productDescription" rows="3"></textarea>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="productPrice" class="form-label">Price ($)</label>
+                                                <input type="number" class="form-control" id="productPrice" step="0.01" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="productStock" class="form-label">Stock Quantity</label>
+                                                <input type="number" class="form-control" id="productStock" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="productCategory" class="form-label">Category</label>
+                                        <input type="text" class="form-control" id="productCategory" placeholder="e.g., Medical Device, Emergency Kit">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="productImage" class="form-label">Product Image</label>
+                                        <input type="file" class="form-control" id="productImage" accept="image/*">
+                                        <div class="form-text">Upload an image file (JPEG, PNG, GIF, WebP). Max size: 5MB</div>
+                                        <div id="imagePreview" class="mt-2" style="display: none;">
+                                            <img id="previewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px;" class="img-thumbnail">
+                                        </div>
+                                        <div id="uploadProgress" class="mt-2" style="display: none;">
+                                            <div class="progress">
+                                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="productImageUrl" value="">
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="submitAddProduct()">Add Product</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modalHtml;
+            
+            // Add image upload handler
+            document.getElementById('productImage').addEventListener('change', handleImageUpload);
+            
+            const modal = new bootstrap.Modal(document.getElementById('addProductModal'));
+            modal.show();
+        }
+
+        function showEditProductModal(productId) {
+            console.log('Loading product for edit:', productId);
+            
+            // First load the product data
+            fetch(`/api/admin/products/${productId}`, { headers: getAuthHeaders() })
+                .then(response => {
+                    console.log('Product fetch response:', response.status);
+                    return response.json();
+                })
+                .then(result => {
+                    console.log('Product data result:', result);
+                    if (!result.success) {
+                        alert('Error loading product data: ' + (result.message || 'Unknown error'));
+                        return;
+                    }
+                    
+                    const product = result.data;
+                    const modalHtml = `
+                        <div class="modal fade" id="editProductModal" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Edit Product</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form id="editProductForm">
+                                            <div class="mb-3">
+                                                <label for="editProductName" class="form-label">Product Name</label>
+                                                <input type="text" class="form-control" id="editProductName" value="${product.name || ''}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="editProductDescription" class="form-label">Description</label>
+                                                <textarea class="form-control" id="editProductDescription" rows="3">${product.description || ''}</textarea>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="editProductPrice" class="form-label">Price ($)</label>
+                                                        <input type="number" class="form-control" id="editProductPrice" step="0.01" value="${product.price || ''}" required>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="editProductStock" class="form-label">Stock Quantity</label>
+                                                        <input type="number" class="form-control" id="editProductStock" value="${product.stockQuantity || ''}" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="editProductCategory" class="form-label">Category</label>
+                                                <input type="text" class="form-control" id="editProductCategory" value="${product.productType || ''}" placeholder="e.g., Medical Device, Emergency Kit">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="editProductImage" class="form-label">Product Image</label>
+                                                <input type="file" class="form-control" id="editProductImage" accept="image/*">
+                                                <div class="form-text">Upload a new image to replace the current one (JPEG, PNG, GIF, WebP). Max size: 5MB</div>
+                                                ${product.imageUrl ? `
+                                                <div class="mt-2">
+                                                    <small class="text-muted">Current image:</small><br>
+                                                    <img src="${product.imageUrl}" alt="Current product image" style="max-width: 200px; max-height: 200px;" class="img-thumbnail">
+                                                </div>` : ''}
+                                                <div id="editImagePreview" class="mt-2" style="display: none;">
+                                                    <small class="text-muted">New image preview:</small><br>
+                                                    <img id="editPreviewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px;" class="img-thumbnail">
+                                                </div>
+                                                <div id="editUploadProgress" class="mt-2" style="display: none;">
+                                                    <div class="progress">
+                                                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <input type="hidden" id="editProductImageUrl" value="${product.imageUrl || ''}">
+                                            <input type="hidden" id="editProductId" value="${productId}">
+                                        </form>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="button" class="btn btn-primary" onclick="submitEditProduct()">Update Product</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('modalContainer').innerHTML = modalHtml;
+                    
+                    // Add image upload handler for edit modal
+                    document.getElementById('editProductImage').addEventListener('change', function(e) {
+                        handleImageUpload(e, 'edit');
+                    });
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error('Error loading product:', error);
+                    alert('Error loading product data');
+                });
+        }
+        
+        function showAddHospitalModal() {
+            const modalHtml = `
+                <div class="modal fade" id="addHospitalModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Add New Hospital</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="addHospitalForm">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="hospitalName" class="form-label">Hospital Name *</label>
+                                                <input type="text" class="form-control" id="hospitalName" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="hospitalEstablished" class="form-label">Established Year</label>
+                                                <input type="text" class="form-control" id="hospitalEstablished" placeholder="e.g., 1985">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="hospitalDescription" class="form-label">Description</label>
+                                        <textarea class="form-control" id="hospitalDescription" rows="3" placeholder="Brief description of the hospital"></textarea>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="hospitalAddress" class="form-label">Address *</label>
+                                        <textarea class="form-control" id="hospitalAddress" rows="2" required></textarea>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="hospitalPhone" class="form-label">Phone Number *</label>
+                                                <input type="tel" class="form-control" id="hospitalPhone" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="hospitalEmail" class="form-label">Email *</label>
+                                                <input type="email" class="form-control" id="hospitalEmail" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="hospitalLatitude" class="form-label">Latitude</label>
+                                                <input type="number" class="form-control" id="hospitalLatitude" step="any" placeholder="e.g., 40.7128">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="hospitalLongitude" class="form-label">Longitude</label>
+                                                <input type="number" class="form-control" id="hospitalLongitude" step="any" placeholder="e.g., -74.0060">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="hospitalRating" class="form-label">Rating (0-5)</label>
+                                                <input type="number" class="form-control" id="hospitalRating" min="0" max="5" step="0.1" value="0">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <div class="form-check mt-4">
+                                                    <input class="form-check-input" type="checkbox" id="hospitalAvailable" checked>
+                                                    <label class="form-check-label" for="hospitalAvailable">
+                                                        Available for Emergency Services
+                                                    </label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="hospitalContract">
+                                                    <label class="form-check-label" for="hospitalContract">
+                                                        Has Contract with ILLVent
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="hospitalSpecialties" class="form-label">Specialties</label>
+                                        <input type="text" class="form-control" id="hospitalSpecialties" placeholder="Separate with commas: e.g., Cardiology, Emergency Care, Surgery">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="hospitalImage" class="form-label">Hospital Image</label>
+                                        <input type="file" class="form-control" id="hospitalImage" accept="image/*">
+                                        <div class="form-text">Upload an image file (JPEG, PNG, GIF, WebP). Max size: 5MB</div>
+                                        <div id="hospitalImagePreview" class="mt-2" style="display: none;">
+                                            <img id="hospitalPreviewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px;" class="img-thumbnail">
+                                        </div>
+                                        <div id="hospitalUploadProgress" class="mt-2" style="display: none;">
+                                            <div class="progress">
+                                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="hospitalImageUrl" value="">
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="submitAddHospital()">Add Hospital</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modalHtml;
+            
+            // Add image upload handler
+            document.getElementById('hospitalImage').addEventListener('change', (e) => handleHospitalImageUpload(e));
+            
+            const modal = new bootstrap.Modal(document.getElementById('addHospitalModal'));
+            modal.show();
+        }
+        
+        function showAddPharmacyModal() {
+            const modalHtml = `
+                <div class="modal fade" id="addPharmacyModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Add New Pharmacy</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="addPharmacyForm">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="pharmacyName" class="form-label">Pharmacy Name *</label>
+                                                <input type="text" class="form-control" id="pharmacyName" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="pharmacyRating" class="form-label">Rating (0-5)</label>
+                                                <input type="number" class="form-control" id="pharmacyRating" min="0" max="5" step="0.1" value="0">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="pharmacyDescription" class="form-label">Description</label>
+                                        <textarea class="form-control" id="pharmacyDescription" rows="3" placeholder="Brief description of the pharmacy"></textarea>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="pharmacyAddress" class="form-label">Address *</label>
+                                        <textarea class="form-control" id="pharmacyAddress" rows="2" required></textarea>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="pharmacyPhone" class="form-label">Phone Number *</label>
+                                        <input type="tel" class="form-control" id="pharmacyPhone" required>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <div class="form-check mt-4">
+                                                    <input class="form-check-input" type="checkbox" id="pharmacyInsurance">
+                                                    <label class="form-check-label" for="pharmacyInsurance">
+                                                        Accepts Private Insurance
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <div class="form-check mt-4">
+                                                    <input class="form-check-input" type="checkbox" id="pharmacyContract">
+                                                    <label class="form-check-label" for="pharmacyContract">
+                                                        Has Contract with ILLVent
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="pharmacyImage" class="form-label">Pharmacy Image</label>
+                                        <input type="file" class="form-control" id="pharmacyImage" accept="image/*">
+                                        <div class="form-text">Upload an image file (JPEG, PNG, GIF, WebP). Max size: 5MB</div>
+                                        <div id="pharmacyImagePreview" class="mt-2" style="display: none;">
+                                            <img id="pharmacyPreviewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px;" class="img-thumbnail">
+                                        </div>
+                                        <div id="pharmacyUploadProgress" class="mt-2" style="display: none;">
+                                            <div class="progress">
+                                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="pharmacyImageUrl" value="">
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="submitAddPharmacy()">Add Pharmacy</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modalHtml;
+            
+            // Add image upload handler
+            document.getElementById('pharmacyImage').addEventListener('change', (e) => handlePharmacyImageUpload(e));
+            
+            const modal = new bootstrap.Modal(document.getElementById('addPharmacyModal'));
+            modal.show();
+        }
+        
+        // Image upload handler
+        async function handleImageUpload(event, prefix = '') {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const previewId = prefix ? `${prefix}PreviewImg` : 'previewImg';
+            const previewContainerId = prefix ? `${prefix}ImagePreview` : 'imagePreview';
+            const progressId = prefix ? `${prefix}UploadProgress` : 'uploadProgress';
+            const imageUrlId = prefix ? `${prefix}ProductImageUrl` : 'productImageUrl';
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById(previewId).src = e.target.result;
+                document.getElementById(previewContainerId).style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Upload image
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            const progressBar = document.querySelector(`#${progressId} .progress-bar`);
+            document.getElementById(progressId).style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/admin/products/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById(imageUrlId).value = result.imageUrl;
+                    progressBar.style.width = '100%';
+                    progressBar.classList.add('bg-success');
+                    setTimeout(() => {
+                        document.getElementById(progressId).style.display = 'none';
+                    }, 1000);
+                } else {
+                    alert('Error uploading image: ' + result.message);
+                    progressBar.classList.add('bg-danger');
+                }
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                alert('Error uploading image: ' + error.message);
+                progressBar.classList.add('bg-danger');
+            }
+        }
+
+        // Hospital image upload handler
+        async function handleHospitalImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('hospitalPreviewImg').src = e.target.result;
+                document.getElementById('hospitalImagePreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Upload image
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            const progressBar = document.querySelector('#hospitalUploadProgress .progress-bar');
+            document.getElementById('hospitalUploadProgress').style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/admin/hospitals/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('hospitalImageUrl').value = result.imageUrl;
+                    progressBar.style.width = '100%';
+                    progressBar.classList.add('bg-success');
+                    setTimeout(() => {
+                        document.getElementById('hospitalUploadProgress').style.display = 'none';
+                    }, 1000);
+                } else {
+                    alert('Error uploading image: ' + result.message);
+                    progressBar.classList.add('bg-danger');
+                }
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                alert('Error uploading image: ' + error.message);
+                progressBar.classList.add('bg-danger');
+            }
+        }
+
+        // Pharmacy image upload handler
+        async function handlePharmacyImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('pharmacyPreviewImg').src = e.target.result;
+                document.getElementById('pharmacyImagePreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Upload image
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            const progressBar = document.querySelector('#pharmacyUploadProgress .progress-bar');
+            document.getElementById('pharmacyUploadProgress').style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/admin/pharmacies/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('pharmacyImageUrl').value = result.imageUrl;
+                    progressBar.style.width = '100%';
+                    progressBar.classList.add('bg-success');
+                    setTimeout(() => {
+                        document.getElementById('pharmacyUploadProgress').style.display = 'none';
+                    }, 1000);
+                } else {
+                    alert('Error uploading image: ' + result.message);
+                    progressBar.classList.add('bg-danger');
+                }
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                alert('Error uploading image: ' + error.message);
+                progressBar.classList.add('bg-danger');
+            }
+        }
+
+        // Submit functions for modals
+        async function submitAddProduct() {
+            try {
+                const data = {
+                    name: document.getElementById('productName').value,
+                    description: document.getElementById('productDescription').value,
+                    price: parseFloat(document.getElementById('productPrice').value),
+                    quantityInStock: parseInt(document.getElementById('productStock').value),
+                    category: document.getElementById('productCategory').value,
+                    imageUrl: document.getElementById('productImageUrl').value
+                };
+                
+                const response = await fetch('/api/admin/products', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('addProductModal')).hide();
+                    await loadProducts();
+                    await loadDashboardStats();
+                    alert('Product added successfully!');
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error adding product:', error);
+                alert('Error adding product: ' + error.message);
+            }
+        }
+
+        async function submitEditProduct() {
+            try {
+                const productId = document.getElementById('editProductId').value;
+                const data = {
+                    name: document.getElementById('editProductName').value,
+                    description: document.getElementById('editProductDescription').value,
+                    price: parseFloat(document.getElementById('editProductPrice').value),
+                    quantityInStock: parseInt(document.getElementById('editProductStock').value),
+                    category: document.getElementById('editProductCategory').value,
+                    imageUrl: document.getElementById('editProductImageUrl').value
+                };
+                
+                const response = await fetch(`/api/admin/products/${productId}`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editProductModal')).hide();
+                    await loadProducts();
+                    await loadDashboardStats();
+                    alert('Product updated successfully!');
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error updating product:', error);
+                alert('Error updating product: ' + error.message);
+            }
+        }
+
+        async function deleteProduct(productId) {
+            if (!confirm('Are you sure you want to delete this product?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/products/${productId}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    await loadProducts();
+                    await loadDashboardStats();
+                    alert('Product deleted successfully!');
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                alert('Error deleting product: ' + error.message);
+            }
+        }
+
+        function editProduct(productId) {
+            showEditProductModal(productId);
+        }
+        
+        async function submitAddHospital() {
+            try {
+                // Parse specialties from comma-separated string
+                const specialtiesInput = document.getElementById('hospitalSpecialties').value;
+                const specialties = specialtiesInput ? 
+                    specialtiesInput.split(',').map(s => s.trim()).filter(s => s.length > 0) : 
+                    ['General Medicine', 'Emergency Care'];
+                
+                const data = {
+                    name: document.getElementById('hospitalName').value,
+                    description: document.getElementById('hospitalDescription').value,
+                    address: document.getElementById('hospitalAddress').value,
+                    phone: document.getElementById('hospitalPhone').value,
+                    email: document.getElementById('hospitalEmail').value,
+                    established: document.getElementById('hospitalEstablished').value,
+                    specialties: specialties,
+                    isAvailable: document.getElementById('hospitalAvailable').checked,
+                    latitude: parseFloat(document.getElementById('hospitalLatitude').value) || 0.0,
+                    longitude: parseFloat(document.getElementById('hospitalLongitude').value) || 0.0,
+                    hasContract: document.getElementById('hospitalContract').checked,
+                    rating: parseFloat(document.getElementById('hospitalRating').value) || 0.0,
+                    imageUrl: document.getElementById('hospitalImageUrl').value
+                };
+                
+                const response = await fetch('/api/admin/hospitals', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('addHospitalModal')).hide();
+                    await loadHospitals();
+                    await loadDashboardStats();
+                    alert('Hospital added successfully!');
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error adding hospital:', error);
+                alert('Error adding hospital: ' + error.message);
+            }
+        }
+        
+        async function submitAddPharmacy() {
+            try {
+                const data = {
+                    name: document.getElementById('pharmacyName').value,
+                    description: document.getElementById('pharmacyDescription').value,
+                    address: document.getElementById('pharmacyAddress').value,
+                    phone: document.getElementById('pharmacyPhone').value,
+                    rating: parseFloat(document.getElementById('pharmacyRating').value) || 0.0,
+                    acceptPrivateInsurance: document.getElementById('pharmacyInsurance').checked,
+                    hasContract: document.getElementById('pharmacyContract').checked,
+                    imageUrl: document.getElementById('pharmacyImageUrl').value
+                };
+                
+                const response = await fetch('/api/admin/pharmacies', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('addPharmacyModal')).hide();
+                    await loadPharmacies();
+                    await loadDashboardStats();
+                    alert('Pharmacy added successfully!');
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error adding pharmacy:', error);
+                alert('Error adding pharmacy: ' + error.message);
+            }
+        }
+        
+
+        
+
+        
+        async function deleteHospital(id) {
+            if (confirm('Are you sure you want to delete this hospital?')) {
+                try {
+                    const response = await fetch(`/api/admin/hospitals/${id}`, {
+                        method: 'DELETE',
+                        headers: getAuthHeaders()
+                    });
+                    
+                    const result = await response.json();
+                    if (result.success) {
+                        await loadHospitals();
+                        await loadDashboardStats();
+                        alert('Hospital deleted successfully!');
+                    } else {
+                        alert('Error: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('Error deleting hospital:', error);
+                    alert('Error deleting hospital: ' + error.message);
+                }
+            }
+        }
+        
+        async function deletePharmacy(id) {
+            if (confirm('Are you sure you want to delete this pharmacy?')) {
+                try {
+                    const response = await fetch(`/api/admin/pharmacies/${id}`, {
+                        method: 'DELETE',
+                        headers: getAuthHeaders()
+                    });
+                    
+                    const result = await response.json();
+                    if (result.success) {
+                        await loadPharmacies();
+                        await loadDashboardStats();
+                        alert('Pharmacy deleted successfully!');
+                    } else {
+                        alert('Error: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('Error deleting pharmacy:', error);
+                    alert('Error deleting pharmacy: ' + error.message);
+                }
+            }
+        }
+        
+        async function manageUserRoles(userId, email) {
+            try {
+                // Get available roles and user's current roles
+                const [rolesResponse, userResponse] = await Promise.all([
+                    fetch('/api/admin/roles', { headers: getAuthHeaders() }),
+                    fetch('/api/admin/users', { headers: getAuthHeaders() })
+                ]);
+                
+                const rolesResult = await rolesResponse.json();
+                const usersResult = await userResponse.json();
+                
+                if (!rolesResult.success || !usersResult.success) {
+                    alert('Error loading role data');
+                    return;
+                }
+                
+                const availableRoles = rolesResult.data;
+                const user = usersResult.data.find(u => u.id === userId);
+                const userRoles = user ? user.roles : [];
+                
+                const modalHtml = `
+                    <div class="modal fade" id="roleManagementModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Manage Roles for ${email}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <h6>Current Roles:</h6>
+                                        <div id="currentRoles" class="mb-3">
+                                            ${userRoles.length > 0 ? 
+                                                userRoles.map(role => `
+                                                    <span class="badge bg-primary me-2 mb-2">
+                                                        ${role}
+                                                        <button type="button" class="btn-close btn-close-white ms-2" 
+                                                                onclick="removeUserRole('${userId}', '${role}')"
+                                                                style="font-size: 0.6em;" title="Remove role"></button>
+                                                    </span>
+                                                `).join('') : 
+                                                '<span class="text-muted">No roles assigned</span>'
+                                            }
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <h6>Add Role:</h6>
+                                        <div class="row">
+                                            <div class="col-8">
+                                                <select class="form-select" id="roleSelect">
+                                                    <option value="">Select a role to add...</option>
+                                                    ${availableRoles.map(role => `
+                                                        <option value="${role}" ${userRoles.includes(role) ? 'disabled' : ''}>
+                                                            ${role} ${userRoles.includes(role) ? '(already assigned)' : ''}
+                                                        </option>
+                                                    `).join('')}
+                                                </select>
+                                            </div>
+                                            <div class="col-4">
+                                                <button type="button" class="btn btn-success w-100" onclick="addUserRole('${userId}', '${email}')">
+                                                    <i class="fas fa-plus"></i> Add
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Available Roles:</strong>
+                                        <ul class="mb-0 mt-2">
+                                            <li><strong>User:</strong> Basic user permissions</li>
+                                            <li><strong>Admin:</strong> Full administrative access</li>                                
+                                            <li><strong>Hospital:</strong> Hospital management access</li>                                           
+                                        </ul>
+                                    </div>
+                                    
+                                    <input type="hidden" id="managingUserId" value="${userId}">
+                                    <input type="hidden" id="managingUserEmail" value="${email}">
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('modalContainer').innerHTML = modalHtml;
+                const modal = new bootstrap.Modal(document.getElementById('roleManagementModal'));
+                modal.show();
+                
+            } catch (error) {
+                console.error('Error loading role management:', error);
+                alert('Error loading role management: ' + error.message);
+            }
+        }
+
+        async function addUserRole(userId, email) {
+            const roleSelect = document.getElementById('roleSelect');
+            const selectedRole = roleSelect.value;
+            
+            if (!selectedRole) {
+                alert('Please select a role to add');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/users/${userId}/roles`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ roleName: selectedRole })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    // Close modal and refresh
+                    bootstrap.Modal.getInstance(document.getElementById('roleManagementModal')).hide();
+                    await loadUsers(); // Refresh the users list
+                    alert(`Role "${selectedRole}" added to ${email} successfully!`);
+                    
+                    // Reopen the modal to show updated roles
+                    setTimeout(() => manageUserRoles(userId, email), 500);
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error adding role:', error);
+                alert('Error adding role: ' + error.message);
+            }
+        }
+
+        async function removeUserRole(userId, roleName) {
+            if (!confirm(`Are you sure you want to remove the "${roleName}" role?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/users/${userId}/roles/${roleName}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    const email = document.getElementById('managingUserEmail').value;
+                    
+                    // Close modal and refresh
+                    bootstrap.Modal.getInstance(document.getElementById('roleManagementModal')).hide();
+                    await loadUsers(); // Refresh the users list
+                    alert(`Role "${roleName}" removed successfully!`);
+                    
+                    // Reopen the modal to show updated roles
+                    setTimeout(() => manageUserRoles(userId, email), 500);
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error removing role:', error);
+                alert('Error removing role: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html> 

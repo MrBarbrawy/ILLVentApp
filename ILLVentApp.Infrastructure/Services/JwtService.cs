@@ -23,6 +23,11 @@ namespace ILLVentApp.Infrastructure.Services
 
 		public string GenerateToken(User user)
 		{
+			return GenerateToken(user, new List<string>());
+		}
+
+		public string GenerateToken(User user, IList<string> roles)
+		{
 			var claims = new List<Claim>
 		{
 			new Claim(JwtRegisteredClaimNames.Sub, user.Id),
@@ -32,6 +37,12 @@ namespace ILLVentApp.Infrastructure.Services
 			new Claim(ClaimTypes.GivenName, $"{user.FirstName} {user.Surname}"),
 			new Claim("email_verified", user.IsEmailVerified.ToString())
 		};
+
+			// Add role claims using short claim type to match JWT Bearer configuration
+			foreach (var role in roles)
+			{
+				claims.Add(new Claim("role", role));
+			}
 
 			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
 				_config["Jwt:Key"]));

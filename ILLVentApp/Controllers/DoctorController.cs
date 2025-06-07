@@ -8,6 +8,11 @@ using System.Threading.Tasks;
 using System.Security.Claims;
 using System.Globalization;
 using System.Web;
+using Microsoft.Extensions.DependencyInjection;
+using ILLVentApp.Infrastructure.Data.Contexts;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
+using ILLVentApp.Domain.Interfaces;
 
 namespace ILLVentApp.Controllers
 {
@@ -64,7 +69,7 @@ namespace ILLVentApp.Controllers
             }
         }
 
-        
+    
         [HttpPost("appointment")]
         public async Task<ActionResult<AppointmentResponseDTO>> CreateAppointment(AppointmentRequestDTO appointment)
         {

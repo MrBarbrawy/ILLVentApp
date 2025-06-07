@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using ILLVentApp.Application.DTOs;
 using ILLVentApp.Domain.DTOs;
 using ILLVentApp.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;

@@ -221,7 +221,7 @@ public class AuthService : IAuthService
 		var roles = await _userManager.GetRolesAsync(user);
 		var primaryRole = roles.FirstOrDefault() ?? "User";
 
-		var token = _jwtService.GenerateToken(user);
+		var token = _jwtService.GenerateToken(user, roles);
 		var userName = $"{user.FirstName} {user.Surname}";
 		
 		return AuthResult.success(token: token, email: user.Email, role: primaryRole, userName: userName);

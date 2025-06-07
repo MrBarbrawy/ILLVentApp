@@ -195,9 +195,45 @@ namespace ILLVentApp.Application.Services
 		   return R * c;
 	   }
 
-	   private double ToRadians(double angle)
+	   	   private double ToRadians(double angle)
 	   {
 		   return Math.PI * angle / 180.0;
 	   }
-	}
+
+       public async Task<HospitalDto> CreateHospitalAsync(CreateHospitalDto hospitalDto)
+       {
+           var hospital = new Hospital
+           {
+               Name = hospitalDto.Name,
+               Description = hospitalDto.Description,
+               Thumbnail = hospitalDto.Thumbnail,
+               ImageUrl = hospitalDto.ImageUrl,
+               Location = hospitalDto.Location,
+               ContactNumber = hospitalDto.ContactNumber,
+               Established = hospitalDto.Established,
+               Specialties = hospitalDto.Specialties,
+               IsAvailable = hospitalDto.IsAvailable,
+               Latitude = hospitalDto.Latitude,
+               Longitude = hospitalDto.Longitude,
+               HasContract = hospitalDto.HasContract,
+               Rating = hospitalDto.Rating
+           };
+
+           _context.Set<Hospital>().Add(hospital);
+           await _context.SaveChangesAsync();
+
+           return _mapper.Map<HospitalDto>(hospital);
+       }
+
+       public async Task<bool> DeleteHospitalAsync(int hospitalId)
+       {
+           var hospital = await _context.Set<Hospital>().FindAsync(hospitalId);
+           if (hospital == null)
+               return false;
+
+           _context.Set<Hospital>().Remove(hospital);
+           await _context.SaveChangesAsync();
+           return true;
+       }
+    }
 }

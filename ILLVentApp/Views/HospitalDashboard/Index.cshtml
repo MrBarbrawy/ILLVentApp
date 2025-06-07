@@ -14,75 +14,430 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <!-- Custom CSS -->
     <style>
-        .emergency-card {
-            border-left: 4px solid #dc3545;
-            transition: all 0.3s ease;
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #f8fafc;
+            --accent-color: #06b6d4;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-color: #1e293b;
+            --light-gray: #f1f5f9;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
         }
+
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(100px, -100px);
+        }
+
+        .dashboard-header h1 {
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+            margin-bottom: 0;
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary-color);
+        }
+
+        .stats-card.danger::before { background: var(--danger-color); }
+        .stats-card.warning::before { background: var(--warning-color); }
+        .stats-card.success::before { background: var(--success-color); }
+
+        .stats-card .icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .stats-card.primary .icon { background: rgba(37, 99, 235, 0.1); color: var(--primary-color); }
+        .stats-card.danger .icon { background: rgba(239, 68, 68, 0.1); color: var(--danger-color); }
+        .stats-card.warning .icon { background: rgba(245, 158, 11, 0.1); color: var(--warning-color); }
+        .stats-card.success .icon { background: rgba(16, 185, 129, 0.1); color: var(--success-color); }
+
+        .stats-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .stats-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .emergency-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
         .emergency-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-lg);
         }
-        .priority-high { border-left-color: #dc3545; }
-        .priority-medium { border-left-color: #ffc107; }
-        .priority-low { border-left-color: #28a745; }
-        
-        .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        .emergency-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+        }
+
+        .emergency-card.priority-high::before { background: var(--danger-color); }
+        .emergency-card.priority-medium::before { background: var(--warning-color); }
+        .emergency-card.priority-low::before { background: var(--success-color); }
+
+        .priority-badge {
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .priority-high { background: rgba(239, 68, 68, 0.1); color: var(--danger-color); }
+        .priority-medium { background: rgba(245, 158, 11, 0.1); color: var(--warning-color); }
+        .priority-low { background: rgba(16, 185, 129, 0.1); color: var(--success-color); }
+
+        .medical-history-badge {
+            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
             color: white;
-            border-radius: 10px;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
         }
-        
+
+        .btn-modern {
+            border-radius: 12px;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 0.875rem;
+        }
+
         .btn-accept {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            border: none;
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            color: white;
         }
-        
+
+        .btn-accept:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
         .btn-reject {
-            background: linear-gradient(135deg, #dc3545, #fd7e14);
-            border: none;
+            background: linear-gradient(135deg, var(--danger-color), #dc2626);
+            color: white;
         }
-        
+
+        .btn-reject:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-details {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-details:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-1px);
+        }
+
         .real-time-indicator {
-            animation: dashboardPulse 2s infinite;
+            animation: pulse 2s infinite;
+            background: var(--success-color);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.875rem;
         }
-        
-        @@keyframes dashboardPulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+
+        @@keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
-        
+
+        .main-content {
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+        }
+
+        .content-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            background: linear-gradient(135deg, #fafbff 0%, #f8fafc 100%);
+            border-radius: 20px 20px 0 0;
+        }
+
         .emergency-list {
             max-height: 600px;
             overflow-y: auto;
+            padding: 1rem;
         }
-        
-        .medical-history-badge {
-            background: linear-gradient(135deg, #17a2b8, #6f42c1);
+
+        .emergency-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .emergency-list::-webkit-scrollbar-track {
+            background: var(--light-gray);
+            border-radius: 3px;
+        }
+
+        .emergency-list::-webkit-scrollbar-thumb {
+            background: var(--text-secondary);
+            border-radius: 3px;
+        }
+
+        .no-requests {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .no-requests i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .hospital-select {
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            background: white;
+            color: var(--text-primary);
+            min-width: 250px;
+        }
+
+        .hospital-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            outline: none;
+        }
+
+        .refresh-btn {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 20px 20px 0 0;
+            border-bottom: none;
+        }
+
+        .medical-history-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .medical-history-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .medical-history-table td:first-child {
+            background: var(--light-gray);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .alert-modern {
+            border-radius: 12px;
+            border: none;
+            font-weight: 500;
+            box-shadow: var(--shadow-md);
+        }
+
+        .patient-info-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .info-item i {
+            width: 24px;
+            color: var(--primary-color);
+            margin-right: 0.75rem;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @@keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .dashboard-header .d-flex {
+            gap: 1rem;
+        }
+
+        .emergency-card .d-flex.flex-column {
+            gap: 0.5rem;
+        }
+
+        .emergency-card .d-flex.flex-column .btn {
+            margin-bottom: 0.5rem;
+        }
+
+        .emergency-card .d-flex.flex-column .btn:last-child {
+            margin-bottom: 0;
         }
     </style>
 </head>
 <body>
     <div class="container-fluid py-4">
         <!-- Header -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h1 class="h3 mb-0"><i class="fas fa-hospital text-primary"></i> Emergency Dashboard</h1>
-                        <p class="text-muted">Real-time emergency request monitoring</p>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <span class="badge bg-success real-time-indicator me-2">
-                            <i class="fas fa-circle"></i> Live
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-hospital-alt me-3"></i>Emergency Command Center</h1>
+                    <p>Real-time emergency response coordination system</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex align-items-center justify-content-end">
+                        <span class="real-time-indicator me-3">
+                            <i class="fas fa-wifi me-2"></i>Live
                         </span>
-                        <select id="hospitalSelect" class="form-select me-2" style="width: 200px;">
+                        <select id="hospitalSelect" class="hospital-select me-3">
                             <option value="">Select Hospital</option>
                         </select>
-                        <button class="btn btn-outline-primary" onclick="refreshDashboard()">
-                            <i class="fas fa-sync-alt"></i> Refresh
+                        <button class="refresh-btn" onclick="refreshDashboard()">
+                            <i class="fas fa-sync-alt me-2"></i>Refresh
                         </button>
                     </div>
                 </div>
@@ -91,40 +446,40 @@
 
         <!-- Statistics Cards -->
         <div class="row mb-4" id="statsSection">
-            <div class="col-md-3">
-                <div class="card stats-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
-                        <h3 class="mb-0" id="totalRequests">0</h3>
-                        <p class="mb-0">Active Requests</p>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card primary">
+                    <div class="icon">
+                        <i class="fas fa-exclamation-triangle"></i>
                     </div>
+                    <div class="stats-value" id="totalRequests">0</div>
+                    <div class="stats-label">Active Requests</div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-danger text-white">
-                    <div class="card-body text-center">
-                        <i class="fas fa-fire fa-2x mb-2"></i>
-                        <h3 class="mb-0" id="highPriorityRequests">0</h3>
-                        <p class="mb-0">High Priority</p>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card danger">
+                    <div class="icon">
+                        <i class="fas fa-fire"></i>
                     </div>
+                    <div class="stats-value" id="highPriorityRequests">0</div>
+                    <div class="stats-label">Critical Cases</div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-warning text-white">
-                    <div class="card-body text-center">
-                        <i class="fas fa-map-marker-alt fa-2x mb-2"></i>
-                        <h3 class="mb-0" id="averageDistance">0 km</h3>
-                        <p class="mb-0">Avg Distance</p>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card warning">
+                    <div class="icon">
+                        <i class="fas fa-map-marker-alt"></i>
                     </div>
+                    <div class="stats-value" id="averageDistance">0 km</div>
+                    <div class="stats-label">Average Distance</div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white">
-                    <div class="card-body text-center">
-                        <i class="fas fa-clock fa-2x mb-2"></i>
-                        <h3 class="mb-0" id="lastUpdated">--:--</h3>
-                        <p class="mb-0">Last Updated</p>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card success">
+                    <div class="icon">
+                        <i class="fas fa-clock"></i>
                     </div>
+                    <div class="stats-value" id="lastUpdated">--:--</div>
+                    <div class="stats-label">Last Updated</div>
                 </div>
             </div>
         </div>
@@ -132,18 +487,22 @@
         <!-- Emergency Requests List -->
         <div class="row">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-ambulance text-danger"></i> Active Emergency Requests</h5>
-                        <span class="badge bg-primary" id="requestCount">0 requests</span>
-                    </div>
-                    <div class="card-body p-0">
-                        <div id="emergencyList" class="emergency-list">
-                            <!-- Emergency requests will be loaded here -->
-                            <div class="text-center py-5" id="noRequestsMessage">
-                                <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">No active emergency requests</p>
+                <div class="main-content">
+                    <div class="content-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1 fw-bold"><i class="fas fa-ambulance text-danger me-2"></i>Emergency Requests</h5>
+                                <p class="text-muted mb-0">Active emergency requests requiring immediate attention</p>
                             </div>
+                            <span class="badge bg-primary fs-6 px-3 py-2" id="requestCount">0 requests</span>
+                        </div>
+                    </div>
+                    <div class="emergency-list" id="emergencyList">
+                        <!-- Emergency requests will be loaded here -->
+                        <div class="no-requests" id="noRequestsMessage">
+                            <i class="fas fa-clipboard-check"></i>
+                            <h6>No Active Emergency Requests</h6>
+                            <p class="mb-0">All emergency requests have been handled. Great work!</p>
                         </div>
                     </div>
                 </div>
@@ -163,12 +522,14 @@
                     <!-- Detail content will be loaded here -->
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-reject text-white" onclick="respondToEmergency(false)">
-                        <i class="fas fa-times"></i> Reject
+                    <button type="button" class="btn btn-secondary btn-modern" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Close
                     </button>
-                    <button type="button" class="btn btn-accept text-white" onclick="respondToEmergency(true)">
-                        <i class="fas fa-check"></i> Accept
+                    <button type="button" class="btn btn-reject btn-modern" onclick="respondToEmergency(false)">
+                        <i class="fas fa-ban me-2"></i>Reject Request
+                    </button>
+                    <button type="button" class="btn btn-accept btn-modern" onclick="respondToEmergency(true)">
+                        <i class="fas fa-check me-2"></i>Accept Emergency
                     </button>
                 </div>
             </div>
@@ -210,8 +571,12 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="submitResponse()">Submit Response</button>
+                    <button type="button" class="btn btn-secondary btn-modern" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-accept btn-modern" onclick="submitResponse()">
+                        <i class="fas fa-paper-plane me-2"></i>Submit Response
+                    </button>
                 </div>
             </div>
         </div>
@@ -444,10 +809,11 @@
                     // Create the no requests message if it doesn't exist
                     const newNoRequestsMessage = document.createElement('div');
                     newNoRequestsMessage.id = 'noRequestsMessage';
-                    newNoRequestsMessage.className = 'text-center py-5';
+                    newNoRequestsMessage.className = 'no-requests';
                     newNoRequestsMessage.innerHTML = `
-                        <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No active emergency requests</p>
+                        <i class="fas fa-clipboard-check"></i>
+                        <h6>No Active Emergency Requests</h6>
+                        <p class="mb-0">All emergency requests have been handled. Great work!</p>
                     `;
                     container.appendChild(newNoRequestsMessage);
                 }
@@ -460,34 +826,39 @@
             }
             
             container.innerHTML = requests.map(request => `
-                <div class="card emergency-card m-3 priority-${getPriorityClass(request.priority)}" 
+                <div class="emergency-card priority-${getPriorityClass(request.priority)}"
                      onclick="showEmergencyDetails(${request.requestId})">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <div class="d-flex align-items-center mb-2">
-                                    <h6 class="mb-0 me-2">Emergency Request #${request.requestId}</h6>
-                                    <span class="badge bg-${getPriorityColor(request.priority)} me-2">
-                                        Priority ${request.priority}
-                                    </span>
-                                    ${request.medicalHistory ? '<span class="badge medical-history-badge text-white">Medical History Available</span>' : ''}
-                                </div>
-                                <p class="text-muted mb-1">
-                                    <i class="fas fa-user"></i> ${request.patientName} | 
-                                    <i class="fas fa-map-marker-alt"></i> ${request.distanceFromHospital} km away
-                                </p>
-                                <p class="mb-1">${request.injuryDescription || 'Emergency assistance needed'}</p>
-                                <small class="text-muted">
-                                    <i class="fas fa-clock"></i> ${formatTimeAgo(request.timestamp)}
-                                </small>
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="d-flex align-items-center mb-2">
+                                <h6 class="mb-0 me-3 fw-bold">Emergency Request #${request.requestId}</h6>
+                                <span class="priority-badge priority-${getPriorityClass(request.priority)}">
+                                    Priority ${request.priority}
+                                </span>
+                                ${request.medicalHistory ? '<span class="medical-history-badge ms-2">Medical History Available</span>' : ''}
                             </div>
-                            <div class="col-md-4 text-end">
-                                <button class="btn btn-accept btn-sm text-white me-2" 
+                            <div class="info-item mb-2">
+                                <i class="fas fa-user-injured"></i>
+                                <span><strong>${request.patientName}</strong> • ${request.distanceFromHospital} km away</span>
+                            </div>
+                            <div class="info-item mb-2">
+                                <i class="fas fa-clipboard-list"></i>
+                                <span>${request.injuryDescription || 'Emergency assistance needed'}</span>
+                            </div>
+                            <div class="info-item mb-0">
+                                <i class="fas fa-clock"></i>
+                                <span class="text-muted">${formatTimeAgo(request.timestamp)}</span>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 text-end">
+                            <div class="d-flex flex-column">
+                                <button class="btn btn-accept btn-modern" 
                                         onclick="event.stopPropagation(); quickAccept(${request.requestId})">
-                                    <i class="fas fa-check"></i> Quick Accept
+                                    <i class="fas fa-check me-2"></i>Quick Accept
                                 </button>
-                                <button class="btn btn-outline-info btn-sm" onclick="event.stopPropagation(); showEmergencyDetails(${request.requestId})">
-                                    <i class="fas fa-eye"></i> Details
+                                <button class="btn btn-details btn-modern" 
+                                        onclick="event.stopPropagation(); showEmergencyDetails(${request.requestId})">
+                                    <i class="fas fa-eye me-2"></i>View Details
                                 </button>
                             </div>
                         </div>
@@ -522,50 +893,156 @@
                         'Authorization': `Bearer ${localStorage.getItem('authToken')}`
                     }
                 });
-                
+
                 if (response.ok) {
                     const result = await response.json();
                     const request = result.data;
                     currentRequestId = requestId;
-                    
+
                     document.getElementById('emergencyDetailContent').innerHTML = `
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>Patient Information</h6>
-                                <p><strong>Name:</strong> ${request.patientName}</p>
-                                <p><strong>Distance:</strong> ${request.distanceFromHospital} km</p>
-                                <p><strong>Priority:</strong> <span class="badge bg-${getPriorityColor(request.priority)}">Priority ${request.priority}</span></p>
-                                <p><strong>Timestamp:</strong> ${formatTimeAgo(request.timestamp)}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <h6>Emergency Details</h6>
-                                <p><strong>Injury Description:</strong> ${request.injuryDescription || 'Not provided'}</p>
-                                <p><strong>Location:</strong> ${request.userLatitude}, ${request.userLongitude}</p>
-                                ${request.injuryPhotoUrl ? `<p><strong>Photo:</strong> Available</p>` : ''}
+                        <div class="patient-info-card">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="fw-bold mb-3"><i class="fas fa-user-injured text-primary me-2"></i>Patient Information</h6>
+                                    <div class="info-item">
+                                        <i class="fas fa-user"></i>
+                                        <span><strong>Name:</strong> ${request.patientName}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span><strong>Distance:</strong> ${request.distanceFromHospital} km</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <span><strong>Priority:</strong> <span class="priority-badge priority-${getPriorityClass(request.priority)} ms-2">Priority ${request.priority}</span></span>
+                                    </div>
+                                    <div class="info-item mb-0">
+                                        <i class="fas fa-clock"></i>
+                                        <span><strong>Reported:</strong> ${formatTimeAgo(request.timestamp)}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="fw-bold mb-3"><i class="fas fa-clipboard-list text-primary me-2"></i>Emergency Details</h6>
+                                    <div class="info-item">
+                                        <i class="fas fa-notes-medical"></i>
+                                        <span><strong>Description:</strong> ${request.injuryDescription || 'Not provided'}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <i class="fas fa-location-dot"></i>
+                                        <span><strong>Coordinates:</strong> ${request.userLatitude}, ${request.userLongitude}</span>
+                                    </div>
+                                    ${request.injuryPhotoUrl ? `
+                                    <div class="info-item mb-0">
+                                        <i class="fas fa-camera"></i>
+                                        <span><strong>Photo:</strong> <span class="badge bg-info">Available</span></span>
+                                    </div>
+                                    ` : ''}
+                                </div>
                             </div>
                         </div>
-                        
+
                         ${request.medicalHistory ? `
-                        <hr>
-                        <h6>Medical History</h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p><strong>Blood Type:</strong> ${request.medicalHistory.bloodType || 'Not specified'}</p>
-                                <p><strong>Allergies:</strong> ${request.medicalHistory.hasAllergies ? request.medicalHistory.allergiesDetails || 'Yes' : 'None'}</p>
-                                <p><strong>Diabetes:</strong> ${request.medicalHistory.hasDiabetes ? request.medicalHistory.diabetesType || 'Yes' : 'No'}</p>
+                        <div class="mt-4">
+                            <h6 class="fw-bold mb-3"><i class="fas fa-heartbeat text-danger me-2"></i>Medical History</h6>
+                            <div class="medical-history-table table-responsive">
+                                <table class="table table-borderless mb-0">
+                                    <tr>
+                                        <td class="fw-bold">Age</td>
+                                        <td>${request.medicalHistory.age || 'Not specified'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Weight</td>
+                                        <td>${request.medicalHistory.weight ? request.medicalHistory.weight + ' kg' : 'Not specified'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Height</td>
+                                        <td>${request.medicalHistory.height ? request.medicalHistory.height + ' cm' : 'Not specified'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Gender</td>
+                                        <td>${request.medicalHistory.gender || 'Not specified'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Blood Type</td>
+                                        <td>${request.medicalHistory.bloodType ? `<span class="badge bg-danger">${request.medicalHistory.bloodType}</span>` : 'Not specified'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Allergies</td>
+                                        <td>${request.medicalHistory.hasAllergies ? 
+                                            `<span class="badge bg-warning text-dark">${request.medicalHistory.allergiesDetails || 'Yes'}</span>` : 
+                                            '<span class="badge bg-success">None</span>'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Diabetes</td>
+                                        <td>${request.medicalHistory.hasDiabetes ? 
+                                            `<span class="badge bg-warning text-dark">${request.medicalHistory.diabetesType || 'Yes'}</span>` : 
+                                            '<span class="badge bg-success">No</span>'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Blood Pressure</td>
+                                        <td>${request.medicalHistory.hasHighBloodPressure ? 
+                                            '<span class="badge bg-danger">High</span>' : 
+                                            request.medicalHistory.hasLowBloodPressure ? 
+                                            '<span class="badge bg-info">Low</span>' : 
+                                            '<span class="badge bg-success">Normal</span>'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Blood Transfusion Objection</td>
+                                        <td>${request.medicalHistory.hasBloodTransfusionObjection ? 
+                                            '<span class="badge bg-danger">Yes</span>' : 
+                                            '<span class="badge bg-success">No</span>'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Medical Conditions</td>
+                                        <td>${request.medicalHistory.medicalConditions?.length > 0 ? 
+                                            request.medicalHistory.medicalConditions.map(condition => 
+                                                `<span class="badge bg-info me-1">${condition}</span>`
+                                            ).join('') : 
+                                            '<span class="badge bg-success">None listed</span>'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">Surgery History</td>
+                                        <td>${request.medicalHistory.hasSurgeryHistory ? 
+                                            '<span class="badge bg-warning text-dark">Yes</span>' : 
+                                            '<span class="badge bg-success">No</span>'}</td>
+                                    </tr>
+                                </table>
                             </div>
-                            <div class="col-md-6">
-                                <p><strong>Blood Pressure:</strong> 
-                                    ${request.medicalHistory.hasHighBloodPressure ? 'High' : 
-                                      request.medicalHistory.hasLowBloodPressure ? 'Low' : 'Normal'}
-                                </p>
-                                <p><strong>Blood Transfusion Objection:</strong> ${request.medicalHistory.hasBloodTransfusionObjection ? 'Yes' : 'No'}</p>
-                                <p><strong>Conditions:</strong> ${request.medicalHistory.medicalConditions?.join(', ') || 'None listed'}</p>
+                            ${request.medicalHistory.hasSurgeryHistory && request.medicalHistory.surgicalHistories?.length > 0 ? `
+                            <div class="mt-4">
+                                <h6 class="fw-bold mb-3"><i class="fas fa-cut text-warning me-2"></i>Surgical History Details</h6>
+                                <div class="medical-history-table table-responsive">
+                                    <table class="table table-borderless mb-0">
+                                        <thead>
+                                            <tr class="bg-light">
+                                                <th class="fw-bold">Surgery Type</th>
+                                                <th class="fw-bold">Date</th>
+                                                <th class="fw-bold">Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${request.medicalHistory.surgicalHistories.map(surgery => `
+                                                <tr>
+                                                    <td><span class="badge bg-primary">${surgery.surgeryType}</span></td>
+                                                    <td>${new Date(surgery.date).toLocaleDateString()}</td>
+                                                    <td>${surgery.details || 'No details provided'}</td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
+                            ` : ''}
                         </div>
-                        ` : '<p class="text-muted">No medical history available</p>'}
+                        ` : `
+                        <div class="mt-4 text-center py-4">
+                            <i class="fas fa-exclamation-triangle text-warning fa-2x mb-3"></i>
+                            <h6 class="text-muted">No Medical History Available</h6>
+                            <p class="text-muted mb-0">Patient medical history is not accessible for this emergency request.</p>
+                        </div>
+                        `}
                     `;
-                    
+
                     new bootstrap.Modal(document.getElementById('emergencyDetailModal')).show();
                 }
             } catch (error) {
@@ -791,9 +1268,12 @@
 
         function showAlert(message, type) {
             const alertHtml = `
-                <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
-                     style="top: 20px; right: 20px; z-index: 9999;">
-                    ${message}
+                <div class="alert alert-${type} alert-modern alert-dismissible fade show position-fixed"
+                     style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                        <span>${message}</span>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `;

@@ -110,11 +110,11 @@ namespace ILLVentApp.Application.Services
                 .ToListAsync();
 
             var timeSlots = new List<TimeSlotDTO>();
-            var currentTime = new TimeSpan(9, 0, 0); // Start at 9 AM
-            var endTime = new TimeSpan(17, 0, 0);    // End at 5 PM
-            var slotDuration = TimeSpan.FromMinutes(30); // 30-minute slots
+            var currentTime = doctor.StartTime; // Use doctor's actual start time
+            var endTime = doctor.EndTime;       // Use doctor's actual end time
+            var slotDuration = TimeSpan.FromMinutes(doctor.SlotDurationMinutes); // Use doctor's slot duration
 
-            while (currentTime < endTime)
+            while (currentTime.Add(slotDuration) <= endTime)
             {
                 // Skip past time slots if it's today
                 if (date == today && currentTime <= DateTime.Now.TimeOfDay)
@@ -138,8 +138,8 @@ namespace ILLVentApp.Application.Services
                         StartTime = slotStart,
                         EndTime = slotEnd,
                         IsReserved = false,
-                        FormattedStartTime = slotStart.ToString("h:mm"),
-                        FormattedEndTime = slotEnd.ToString("h:mm")
+                        FormattedStartTime = FormatTimeWithout24Hour(slotStart),
+                        FormattedEndTime = FormatTimeWithout24Hour(slotEnd)
                     });
                 }
 
@@ -176,19 +176,19 @@ namespace ILLVentApp.Application.Services
                 {
                     // Skip if it's today and we're past working hours
                     if (currentDate.Date == currentDateTime.Date && 
-                        currentDateTime.TimeOfDay > new TimeSpan(17, 0, 0)) // 5 PM
+                        currentDateTime.TimeOfDay > doctor.EndTime)
                     {
                         currentDate = currentDate.AddDays(1);
                         continue;
                     }
 
                     // Check for available slots
-                    var dayStart = new TimeSpan(9, 0, 0); // 9 AM
-                    var dayEnd = new TimeSpan(17, 0, 0);  // 5 PM
-                    var slotDuration = TimeSpan.FromMinutes(30);
+                    var dayStart = doctor.StartTime;
+                    var dayEnd = doctor.EndTime;
+                    var slotDuration = TimeSpan.FromMinutes(doctor.SlotDurationMinutes);
                     var hasAvailableSlots = false;
 
-                    for (var time = dayStart; time < dayEnd; time = time.Add(slotDuration))
+                    for (var time = dayStart; time.Add(slotDuration) <= dayEnd; time = time.Add(slotDuration))
                     {
                         // Skip past times for today
                         if (currentDate.Date == currentDateTime.Date && time <= currentDateTime.TimeOfDay)
@@ -227,7 +227,91 @@ namespace ILLVentApp.Application.Services
 
         private string FormatTime(TimeSpan time)
         {
-            return DateTime.Today.Add(time).ToString("hh:mm tt"); // Returns time in "09:00 AM" format
+            return DateTime.Today.Add(time).ToString("HH:mm"); // Returns time in "09:00" format (24-hour)
+        }
+
+        private string FormatTimeWithout24Hour(DateTime dateTime)
+        {
+            // Convert to 12-hour format without AM/PM
+            var hour = dateTime.Hour;
+            var minute = dateTime.Minute;
+            
+            if (hour == 0)
+            {
+                return $"12:{minute:D2}";
+            }
+            else if (hour <= 12)
+            {
+                return $"{hour}:{minute:D2}";
+            }
+            else
+            {
+                return $"{hour - 12}:{minute:D2}";
+            }
+        }
+
+        private bool TryParseTimeString(string timeString, out TimeSpan timeSpan)
+        {
+            timeSpan = TimeSpan.Zero;
+            
+            if (string.IsNullOrWhiteSpace(timeString))
+                return false;
+
+            // Try parsing as 12-hour format with AM/PM first
+            var formats = new[] { 
+                "h:mm tt", "hh:mm tt", "h:mm t", "hh:mm t",
+                "h tt", "hh tt", "h t", "hh t"
+            };
+            
+            if (DateTime.TryParseExact(timeString, formats, 
+                System.Globalization.CultureInfo.InvariantCulture, 
+                System.Globalization.DateTimeStyles.None, out DateTime dateTime))
+            {
+                timeSpan = dateTime.TimeOfDay;
+                return true;
+            }
+
+            // Handle special case: if it's just a number like "1:00" without AM/PM
+            // For business hours context, assume 1-5 are PM, 6-12 are as-is
+            if (timeString.Contains(":"))
+            {
+                var parts = timeString.Split(':');
+                if (parts.Length == 2 && int.TryParse(parts[0], out int hour) && int.TryParse(parts[1], out int minute))
+                {
+                    if (hour >= 1 && hour <= 5 && minute >= 0 && minute <= 59)
+                    {
+                        // Convert 1-5 to PM (13-17 in 24-hour format)
+                        timeSpan = new TimeSpan(hour + 12, minute, 0);
+                        return true;
+                    }
+                    else if (hour >= 6 && hour <= 8 && minute >= 0 && minute <= 59)
+                    {
+                        // Keep 6-8 as AM (morning hours)
+                        timeSpan = new TimeSpan(hour, minute, 0);
+                        return true;
+                    }
+                    else if (hour >= 9 && hour <= 12 && minute >= 0 && minute <= 59)
+                    {
+                        // Keep 9-12 as-is (9 AM to 12 PM)
+                        timeSpan = new TimeSpan(hour, minute, 0);
+                        return true;
+                    }
+                    else if (hour >= 13 && hour <= 23 && minute >= 0 && minute <= 59)
+                    {
+                        // Already in 24-hour format
+                        timeSpan = new TimeSpan(hour, minute, 0);
+                        return true;
+                    }
+                }
+            }
+
+            // Last resort: try standard TimeSpan parsing (24-hour format like "13:00")
+            if (TimeSpan.TryParse(timeString, out timeSpan))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public async Task<AppointmentResponseDTO> CreateAppointmentAsync(AppointmentRequestWithUser appointmentRequest)
@@ -238,10 +322,11 @@ namespace ILLVentApp.Application.Services
             if (doctor == null)
                 throw new InvalidOperationException("Doctor not found.");
 
-            // Parse the time string
-            if (!TimeSpan.TryParse(appointmentRequest.StartTime, out TimeSpan startTime))
+            // Parse the time string - handle both 12-hour and 24-hour formats
+            TimeSpan startTime;
+            if (!TryParseTimeString(appointmentRequest.StartTime, out startTime))
             {
-                throw new InvalidOperationException("Invalid time format. Please use HH:mm format.");
+                throw new InvalidOperationException("Invalid time format. Please use HH:mm format (24-hour) or h:mm AM/PM format.");
             }
 
             var currentDateTime = DateTime.Now;
@@ -280,9 +365,16 @@ namespace ILLVentApp.Application.Services
             if (!doctor.WorkingDaysArray.Contains(appointmentRequest.AppointmentDate.DayOfWeek))
                 throw new InvalidOperationException("The selected date is not a working day for this doctor.");
 
+            // Debug logging for working hours validation
+            var endTimeForSlot = startTime.Add(TimeSpan.FromMinutes(doctor.SlotDurationMinutes));
             if (startTime < doctor.StartTime ||
-                startTime.Add(TimeSpan.FromMinutes(doctor.SlotDurationMinutes)) > doctor.EndTime)
-                throw new InvalidOperationException("The selected time is outside the doctor's working hours.");
+                endTimeForSlot > doctor.EndTime)
+            {
+                throw new InvalidOperationException(
+                    $"The selected time is outside the doctor's working hours. " +
+                    $"Requested: {startTime:hh\\:mm} - {endTimeForSlot:hh\\:mm}, " +
+                    $"Doctor hours: {doctor.StartTime:hh\\:mm} - {doctor.EndTime:hh\\:mm}");
+            }
 
             // Check if the time slot is already booked
             var endTime = startTime.Add(TimeSpan.FromMinutes(doctor.SlotDurationMinutes));

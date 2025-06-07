@@ -422,6 +422,141 @@ namespace ILLVentApp.Controllers
             }
         }
 
+        // GET: api/Emergency/status/{requestId}
+        /// <summary>
+        /// Check emergency request status (for loading screen updates)
+        /// </summary>
+        [HttpGet("status/{requestId}")]
+        [Authorize]
+        public async Task<IActionResult> GetEmergencyRequestStatus(int requestId)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized();
+
+                var request = await _context.EmergencyRescueRequests
+                    .Where(r => r.RequestId == requestId && r.UserId == userId)
+                    .Select(r => new
+                    {
+                        RequestId = r.RequestId,
+                        Status = r.RequestStatus,
+                        CreatedAt = r.Timestamp,
+                        AcceptedHospitalId = r.AcceptedHospitalId,
+                        HospitalResponseTime = r.HospitalResponseTime,
+                        UserLatitude = r.UserLatitude,
+                        UserLongitude = r.UserLongitude
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (request == null)
+                    return NotFound(new { success = false, message = "Emergency request not found" });
+
+                // Base response object
+                var baseResponse = new
+                {
+                    requestId = request.RequestId,
+                    status = request.Status,
+                    createdAt = request.CreatedAt,
+                    waitingTime = DateTime.Now.Subtract(request.CreatedAt).TotalMinutes,
+                    hasHospitalResponse = request.AcceptedHospitalId.HasValue,
+                    hospitalResponseTime = request.HospitalResponseTime,
+                    location = new
+                    {
+                        latitude = request.UserLatitude,
+                        longitude = request.UserLongitude
+                    }
+                };
+
+                // If hospital has accepted, include hospital details
+                if (request.AcceptedHospitalId.HasValue)
+                {
+                    try
+                    {
+                        var hospital = await _context.Hospitals
+                            .Where(h => h.HospitalId == request.AcceptedHospitalId.Value)
+                            .Select(h => new
+                            {
+                                hospitalId = h.HospitalId,
+                                name = h.Name,
+                                location = h.Location,
+                                contactNumber = h.ContactNumber,
+                                latitude = h.Latitude,
+                                longitude = h.Longitude
+                            })
+                            .FirstOrDefaultAsync();
+
+                        if (hospital != null)
+                        {
+                            // Calculate distance with null checks
+                            double distanceKm = 0.0;
+                            try
+                            {
+                                if (request.UserLatitude != 0 && request.UserLongitude != 0 && 
+                                    hospital.latitude != 0 && hospital.longitude != 0)
+                                {
+                                    distanceKm = Math.Round(CalculateDistance(
+                                        request.UserLatitude, request.UserLongitude,
+                                        hospital.latitude, hospital.longitude), 2);
+                                }
+                            }
+                            catch (Exception distanceEx)
+                            {
+                                _logger.LogWarning(distanceEx, "Error calculating distance for request {RequestId}", requestId);
+                                distanceKm = 0.0; // Default to 0 if calculation fails
+                            }
+
+                            return Ok(new
+                            {
+                                success = true,
+                                data = new
+                                {
+                                    requestId = request.RequestId,
+                                    status = request.Status,
+                                    createdAt = request.CreatedAt,
+                                    waitingTime = DateTime.Now.Subtract(request.CreatedAt).TotalMinutes,
+                                    hasHospitalResponse = true,
+                                    hospitalResponseTime = request.HospitalResponseTime,
+                                    acceptedHospital = new
+                                    {
+                                        hospitalId = hospital.hospitalId,
+                                        name = hospital.name,
+                                        location = hospital.location,
+                                        contactNumber = hospital.contactNumber,
+                                        latitude = hospital.latitude,
+                                        longitude = hospital.longitude,
+                                        distanceKm = distanceKm
+                                    },
+                                    location = new
+                                    {
+                                        latitude = request.UserLatitude,
+                                        longitude = request.UserLongitude
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    catch (Exception hospitalEx)
+                    {
+                        _logger.LogError(hospitalEx, "Error getting hospital details for request {RequestId}", requestId);
+                        // Continue with base response if hospital details fail
+                    }
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    data = baseResponse
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting emergency request status for {RequestId}", requestId);
+                return StatusCode(500, new { success = false, message = "Error retrieving request status" });
+            }
+        }
+
         // Helper method for distance calculation (same as service)
         private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
         {
