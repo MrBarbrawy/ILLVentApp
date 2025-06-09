@@ -51,10 +51,28 @@ namespace ILLVentApp.Controllers
                 var result = await _emergencyService.CreateEmergencyRequestAsync(userId, request);
 
                 if (!result.Success)
-                    return BadRequest(new { success = false, message = result.Message });
+                {
+                    // Enhanced error response with category and error code
+                    var errorResponse = new { 
+                        success = false, 
+                        message = result.Message,
+                        category = result.ErrorCategory,
+                        errorCode = result.ErrorCode,
+                        errors = result.Errors
+                    };
+
+                    // Return appropriate status codes based on error category
+                    return result.ErrorCategory switch
+                    {
+                        "Authentication" => Unauthorized(errorResponse),
+                        "CriticalSystem" => StatusCode(503, errorResponse), // Service Unavailable
+                        "HospitalAvailability" => StatusCode(503, errorResponse), // Service Unavailable
+                        _ => BadRequest(errorResponse)
+                    };
+                }
 
                 _logger.LogInformation("Emergency request {RequestId} created successfully for user {UserId}", 
-                    result.RequestId, userId);
+                    result.Data?.RequestId, userId);
 
                 return Ok(new
                 {
@@ -62,10 +80,10 @@ namespace ILLVentApp.Controllers
                     message = result.Message,
                     data = new
                     {
-                        requestId = result.RequestId,
-                        trackingId = result.TrackingId,
-                        targetHospitals = result.NearbyHospitals,
-                        hospitalsNotified = result.NearbyHospitals.Count,
+                        requestId = result.Data?.RequestId,
+                        trackingId = result.Data?.TrackingId,
+                        targetHospitals = result.Data?.NearbyHospitals,
+                        hospitalsNotified = result.Data?.NearbyHospitals?.Count ?? 0,
                         selectionMethod = "Automatic"
                     }
                 });
@@ -92,10 +110,19 @@ namespace ILLVentApp.Controllers
 
                 var result = await _emergencyService.UpdateEmergencyLocationAsync(locationUpdate);
 
-                if (!result)
-                    return NotFound(new { success = false, message = "Emergency request not found or not active" });
+                if (!result.Success)
+                    return BadRequest(new { success = false, message = result.Message });
 
-                return Ok(new { success = true, message = "Location updated successfully" });
+                return Ok(new { 
+                    success = true, 
+                    message = result.Message,
+                    data = new
+                    {
+                        latitude = result.UpdatedLatitude,
+                        longitude = result.UpdatedLongitude,
+                        timestamp = result.UpdatedTimestamp
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -253,13 +280,17 @@ namespace ILLVentApp.Controllers
 
                 var result = await _emergencyService.RespondToEmergencyRequestAsync(response);
 
-                if (result)
+                if (result.Success)
                 {
-                    var action = response.IsAccepted ? "accepted" : "rejected";
-                    return Ok(new { success = true, message = $"Emergency request {action} successfully" });
+                    return Ok(new { 
+                        success = true, 
+                        message = result.Message,
+                        responseType = result.ResponseType,
+                        estimatedResponseTime = result.EstimatedResponseTime
+                    });
                 }
 
-                return BadRequest(new { success = false, message = "Failed to respond to emergency request" });
+                return BadRequest(new { success = false, message = result.Message, responseType = result.ResponseType });
             }
             catch (Exception ex)
             {
@@ -399,7 +430,23 @@ namespace ILLVentApp.Controllers
                 var result = await _emergencyService.CreateEmergencyRequestAsync(userId, emergencyRequest);
 
                 if (!result.Success)
-                    return BadRequest(new { success = false, message = result.Message });
+                {
+                    var errorResponse = new { 
+                        success = false, 
+                        message = result.Message,
+                        category = result.ErrorCategory,
+                        errorCode = result.ErrorCode,
+                        errors = result.Errors
+                    };
+
+                    return result.ErrorCategory switch
+                    {
+                        "Authentication" => Unauthorized(errorResponse),
+                        "CriticalSystem" => StatusCode(503, errorResponse),
+                        "HospitalAvailability" => StatusCode(503, errorResponse),
+                        _ => BadRequest(errorResponse)
+                    };
+                }
 
                 return Ok(new
                 {
@@ -407,10 +454,10 @@ namespace ILLVentApp.Controllers
                     message = "Emergency request created successfully!",
                     data = new
                     {
-                        requestId = result.RequestId,
-                        trackingId = result.TrackingId,
-                        targetHospitals = result.NearbyHospitals,
-                        hospitalsNotified = result.NearbyHospitals.Count,
+                        requestId = result.Data?.RequestId,
+                        trackingId = result.Data?.TrackingId,
+                        targetHospitals = result.Data?.NearbyHospitals,
+                        hospitalsNotified = result.Data?.NearbyHospitals?.Count ?? 0,
                         selectionMethod = "Automatic"
                     }
                 });

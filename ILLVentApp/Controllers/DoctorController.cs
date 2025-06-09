@@ -71,15 +71,38 @@ namespace ILLVentApp.Controllers
 
     
         [HttpPost("appointment")]
-        public async Task<ActionResult<AppointmentResponseDTO>> CreateAppointment(AppointmentRequestDTO appointment)
+        public async Task<ActionResult<AppointmentResult>> CreateAppointment(AppointmentRequestDTO appointment)
         {
             try
             {
-                // Get the user ID from the authenticated user
+                // 2. Authentication/Authorization Errors - Enhanced validation
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new { message = "User not authenticated" });
+                    return Unauthorized(new AppointmentResult 
+                    { 
+                        Success = false, 
+                        Message = "Please login to book an appointment",
+                        Data = null,
+                        Errors = new List<string> { "User not authenticated" }
+                    });
+                }
+
+                // Additional model validation
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList();
+                    
+                    return BadRequest(new AppointmentResult
+                    {
+                        Success = false,
+                        Message = "Please check your appointment details",
+                        Data = null,
+                        Errors = errors
+                    });
                 }
 
                 // Create a new appointment request with the user ID
@@ -96,11 +119,26 @@ namespace ILLVentApp.Controllers
                 };
 
                 var result = await _doctorService.CreateAppointmentAsync(appointmentWithUser);
-                return Ok(result);
+                
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+                else
+                {
+                    return BadRequest(result);
+                }
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                // 6. System Errors - Catch any unhandled exceptions
+                return StatusCode(500, new AppointmentResult
+                {
+                    Success = false,
+                    Message = "An unexpected error occurred. Please try again later",
+                    Data = null,
+                    Errors = new List<string> { "Internal server error" }
+                });
             }
         }
 

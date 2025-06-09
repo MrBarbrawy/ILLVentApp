@@ -38,6 +38,23 @@ namespace ILLVentApp.Controllers
 		[HttpPost("register")]
 		public async Task<IActionResult> Register(RegisterRequest request)
 		{
+			// Add model validation
+			if (!ModelState.IsValid)
+			{
+				var errors = ModelState.Values
+					.SelectMany(v => v.Errors)
+					.Select(e => e.ErrorMessage)
+					.ToList();
+				
+				_logger.LogWarning("Registration validation failed: {Errors}", string.Join(", ", errors));
+				
+				return BadRequest(new
+				{
+					Success = false,
+					Message = string.Join(", ", errors)
+				});
+			}
+
 			var command = _mapper.Map<RegisterCommand>(request);
 			var result = await _authService.RegisterAsync(command);
 			return ResultHandler(result);
@@ -46,6 +63,23 @@ namespace ILLVentApp.Controllers
 		[HttpPost("confirm-email")]
 		public async Task<IActionResult> ConfirmEmail(ConfirmEmailRequest request)
 		{
+			// Add model validation
+			if (!ModelState.IsValid)
+			{
+				var errors = ModelState.Values
+					.SelectMany(v => v.Errors)
+					.Select(e => e.ErrorMessage)
+					.ToList();
+				
+				_logger.LogWarning("Email confirmation validation failed: {Errors}", string.Join(", ", errors));
+				
+				return BadRequest(new
+				{
+					Success = false,
+					Message = string.Join(", ", errors)
+				});
+			}
+
 			var command = _mapper.Map<ConfirmEmailCommand>(request);
 			var result = await _authService.ConfirmEmailAsync(command);
 			return ResultHandler(result);
@@ -54,6 +88,23 @@ namespace ILLVentApp.Controllers
 		[HttpPost("login")]
 		public async Task<IActionResult> Login(LoginRequest request)
 		{
+			// Add model validation
+			if (!ModelState.IsValid)
+			{
+				var errors = ModelState.Values
+					.SelectMany(v => v.Errors)
+					.Select(e => e.ErrorMessage)
+					.ToList();
+				
+				_logger.LogWarning("Login validation failed: {Errors}", string.Join(", ", errors));
+				
+				return BadRequest(new
+				{
+					Success = false,
+					Message = string.Join(", ", errors)
+				});
+			}
+
 			var command = _mapper.Map<LoginCommand>(request);
 			var result = await _authService.LoginAsync(command);
 			return ResultHandler(result);
@@ -70,6 +121,23 @@ namespace ILLVentApp.Controllers
 		[HttpPost("reset-password")]
 		public async Task<IActionResult> ResetPassword(ResetPasswordRequest request)
 		{
+			// Add model validation
+			if (!ModelState.IsValid)
+			{
+				var errors = ModelState.Values
+					.SelectMany(v => v.Errors)
+					.Select(e => e.ErrorMessage)
+					.ToList();
+				
+				_logger.LogWarning("Reset password validation failed: {Errors}", string.Join(", ", errors));
+				
+				return BadRequest(new
+				{
+					Success = false,
+					Message = string.Join(", ", errors)
+				});
+			}
+
 			var command = _mapper.Map<ResetPasswordCommand>(request);
 			var result = await _authService.CompletePasswordResetAsync(command);
 			return ResultHandler(result);

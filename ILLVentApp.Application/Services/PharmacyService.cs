@@ -6,6 +6,7 @@ using ILLVentApp.Domain.Interfaces;
 using ILLVentApp.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
+using System;
 
 namespace ILLVentApp.Application.Services
 {
@@ -37,7 +38,8 @@ namespace ILLVentApp.Application.Services
                     Rating = p.Rating,
                     ContactNumber = p.ContactNumber,
                     AcceptPrivateInsurance = p.AcceptPrivateInsurance,
-                    HasContract = p.HasContract
+                    HasContract = p.HasContract,
+                    WebsiteUrl = p.WebsiteUrl
                 })
                 .ToListAsync();
 
@@ -60,25 +62,64 @@ namespace ILLVentApp.Application.Services
             return pharmacy;
         }
 
+        public async Task<PharmacyDto> GetPharmacyByIdAsync(int id)
+        {
+            var pharmacy = await _context.Set<Pharmacy>()
+                .Where(p => p.PharmacyId == id)
+                .Select(p => new Pharmacy
+                {
+                    PharmacyId = p.PharmacyId,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Thumbnail = p.Thumbnail,
+                    ImageUrl = p.ImageUrl,
+                    Location = p.Location,
+                    Rating = p.Rating,
+                    ContactNumber = p.ContactNumber,
+                    AcceptPrivateInsurance = p.AcceptPrivateInsurance,
+                    HasContract = p.HasContract,
+                    WebsiteUrl = p.WebsiteUrl
+                })
+                .FirstOrDefaultAsync();
+
+            if (pharmacy != null)
+            {
+                AddFullUrls(pharmacy);
+            }
+
+            return _mapper.Map<PharmacyDto>(pharmacy);
+        }
+
         public async Task<PharmacyDto> CreatePharmacyAsync(CreatePharmacyDto pharmacyDto)
         {
-            var pharmacy = new Pharmacy
-            {
-                Name = pharmacyDto.Name,
-                Description = pharmacyDto.Description,
-                Thumbnail = pharmacyDto.Thumbnail,
-                ImageUrl = pharmacyDto.ImageUrl,
-                Location = pharmacyDto.Location,
-                Rating = pharmacyDto.Rating,
-                ContactNumber = pharmacyDto.ContactNumber,
-                AcceptPrivateInsurance = pharmacyDto.AcceptPrivateInsurance,
-                HasContract = pharmacyDto.HasContract
-            };
-
+            var pharmacy = _mapper.Map<Pharmacy>(pharmacyDto);
             _context.Set<Pharmacy>().Add(pharmacy);
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<PharmacyDto>(pharmacy);
+            // Return the full pharmacy with URLs
+            var createdPharmacy = await GetPharmacyByIdAsync(pharmacy.PharmacyId);
+            return createdPharmacy;
+        }
+
+        public async Task<PharmacyDto> UpdatePharmacyAsync(UpdatePharmacyDto pharmacyDto)
+        {
+            var existingPharmacy = await _context.Set<Pharmacy>()
+                .FirstOrDefaultAsync(p => p.PharmacyId == pharmacyDto.PharmacyId);
+
+            if (existingPharmacy == null)
+            {
+                throw new InvalidOperationException($"Pharmacy with ID {pharmacyDto.PharmacyId} not found.");
+            }
+
+            // Update the existing pharmacy with new values
+            _mapper.Map(pharmacyDto, existingPharmacy);
+            
+            _context.Set<Pharmacy>().Update(existingPharmacy);
+            await _context.SaveChangesAsync();
+
+            // Return the updated pharmacy with URLs
+            var updatedPharmacy = await GetPharmacyByIdAsync(existingPharmacy.PharmacyId);
+            return updatedPharmacy;
         }
 
         public async Task<bool> DeletePharmacyAsync(int pharmacyId)

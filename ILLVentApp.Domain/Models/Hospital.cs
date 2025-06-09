@@ -16,6 +16,7 @@
 		public double Latitude { get; set; }
 		public double Longitude { get; set; }
 		public bool HasContract { get; set; } // Partner status
+		public string? WebsiteUrl { get; set; } // Website URL for redirection
 
 		// Navigation properties
 		public List<Ambulance> Ambulances { get; set; }

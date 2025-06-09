@@ -42,7 +42,8 @@ namespace ILLVentApp.Application.Services
 				   IsAvailable = h.IsAvailable,
 				   Latitude = h.Latitude,
 				   Longitude = h.Longitude,
-				   HasContract = h.HasContract
+				   HasContract = h.HasContract,
+				   WebsiteUrl = h.WebsiteUrl
 			   })
                 .ToListAsync();
 
@@ -84,7 +85,8 @@ namespace ILLVentApp.Application.Services
 				   IsAvailable = h.IsAvailable,
 				   Latitude = h.Latitude,
 				   Longitude = h.Longitude,
-				   HasContract = h.HasContract
+				   HasContract = h.HasContract,
+				   WebsiteUrl = h.WebsiteUrl
 			   })
 			   .FirstOrDefaultAsync();
 
@@ -115,7 +117,8 @@ namespace ILLVentApp.Application.Services
 				   IsAvailable = h.IsAvailable,
 				   Latitude = h.Latitude,
 				   Longitude = h.Longitude,
-				   HasContract = h.HasContract
+				   HasContract = h.HasContract,
+				   WebsiteUrl = h.WebsiteUrl
 			   })
 			   .ToListAsync();
 
@@ -151,7 +154,8 @@ namespace ILLVentApp.Application.Services
 				   IsAvailable = h.IsAvailable,
 				   Latitude = h.Latitude,
 				   Longitude = h.Longitude,
-				   HasContract = h.HasContract
+				   HasContract = h.HasContract,
+				   WebsiteUrl = h.WebsiteUrl
 			   })
 			   .ToListAsync();
 
@@ -202,27 +206,34 @@ namespace ILLVentApp.Application.Services
 
        public async Task<HospitalDto> CreateHospitalAsync(CreateHospitalDto hospitalDto)
        {
-           var hospital = new Hospital
-           {
-               Name = hospitalDto.Name,
-               Description = hospitalDto.Description,
-               Thumbnail = hospitalDto.Thumbnail,
-               ImageUrl = hospitalDto.ImageUrl,
-               Location = hospitalDto.Location,
-               ContactNumber = hospitalDto.ContactNumber,
-               Established = hospitalDto.Established,
-               Specialties = hospitalDto.Specialties,
-               IsAvailable = hospitalDto.IsAvailable,
-               Latitude = hospitalDto.Latitude,
-               Longitude = hospitalDto.Longitude,
-               HasContract = hospitalDto.HasContract,
-               Rating = hospitalDto.Rating
-           };
-
+           var hospital = _mapper.Map<Hospital>(hospitalDto);
            _context.Set<Hospital>().Add(hospital);
            await _context.SaveChangesAsync();
 
-           return _mapper.Map<HospitalDto>(hospital);
+           // Return the full hospital with URLs
+           var createdHospital = await GetHospitalByIdAsync(hospital.HospitalId);
+           return createdHospital;
+       }
+
+       public async Task<HospitalDto> UpdateHospitalAsync(UpdateHospitalDto hospitalDto)
+       {
+           var existingHospital = await _context.Set<Hospital>()
+               .FirstOrDefaultAsync(h => h.HospitalId == hospitalDto.HospitalId);
+
+           if (existingHospital == null)
+           {
+               throw new InvalidOperationException($"Hospital with ID {hospitalDto.HospitalId} not found.");
+           }
+
+           // Update the existing hospital with new values
+           _mapper.Map(hospitalDto, existingHospital);
+            
+           _context.Set<Hospital>().Update(existingHospital);
+           await _context.SaveChangesAsync();
+
+           // Return the updated hospital with URLs
+           var updatedHospital = await GetHospitalByIdAsync(existingHospital.HospitalId);
+           return updatedHospital;
        }
 
        public async Task<bool> DeleteHospitalAsync(int hospitalId)

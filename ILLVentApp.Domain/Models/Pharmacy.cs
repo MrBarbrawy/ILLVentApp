@@ -12,6 +12,7 @@
 		public required string ContactNumber { get; set; }
 		public bool AcceptPrivateInsurance { get; set; }
 		public bool HasContract { get; set; }
+		public string? WebsiteUrl { get; set; }
 
 		// Navigation property
 		public List<Deals> Deals { get; set; }

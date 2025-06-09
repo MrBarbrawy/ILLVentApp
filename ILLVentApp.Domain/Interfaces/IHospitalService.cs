@@ -12,6 +12,7 @@ namespace ILLVentApp.Domain.Interfaces
         Task<HospitalDto> GetNearestAvailableHospitalAsync(double latitude, double longitude);
         Task<bool> IsHospitalAvailableForEmergencyAsync(int hospitalId);
         Task<HospitalDto> CreateHospitalAsync(CreateHospitalDto hospitalDto);
+        Task<HospitalDto> UpdateHospitalAsync(UpdateHospitalDto hospitalDto);
         Task<bool> DeleteHospitalAsync(int hospitalId);
     }
 }

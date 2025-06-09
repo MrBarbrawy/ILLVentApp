@@ -322,11 +322,9 @@
                         <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
-                            <form method="post" asp-action="Logout" class="d-inline">
-                                <button type="submit" class="dropdown-item">
-                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
-                                </button>
-                            </form>
+                            <button type="button" class="dropdown-item" onclick="logout()">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </button>
                         </li>
                     </ul>
                 </div>
@@ -567,7 +565,7 @@
                                         <th>Name</th>
                                         <th>Address</th>
                                         <th>Phone</th>
-                                        <th>Email</th>
+                                        <th>Website</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -606,6 +604,7 @@
                                         <th>Name</th>
                                         <th>Address</th>
                                         <th>Phone</th>
+                                        <th>Website</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -887,9 +886,12 @@
                             <td>${hospital.name}</td>
                             <td>${hospital.address || 'N/A'}</td>
                             <td>${hospital.phone || 'N/A'}</td>
-                            <td>${hospital.email || 'N/A'}</td>
+                            <td>${hospital.websiteUrl ? `<a href="${hospital.websiteUrl}" target="_blank" class="text-primary"><i class="fas fa-external-link-alt"></i></a>` : 'N/A'}</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteHospital(${hospital.id})">
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editHospital(${hospital.id})" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteHospital(${hospital.id})" title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </td>
@@ -919,15 +921,19 @@
                             <td>${pharmacy.name}</td>
                             <td>${pharmacy.address || 'N/A'}</td>
                             <td>${pharmacy.phone || 'N/A'}</td>
+                            <td>${pharmacy.websiteUrl ? `<a href="${pharmacy.websiteUrl}" target="_blank" class="text-primary"><i class="fas fa-external-link-alt"></i></a>` : 'N/A'}</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deletePharmacy(${pharmacy.id})">
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editPharmacy(${pharmacy.id})" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deletePharmacy(${pharmacy.id})" title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </td>
                         </tr>
                     `).join('');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">No pharmacies found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">No pharmacies found</td></tr>';
                 }
             } catch (error) {
                 console.error('Error loading pharmacies:', error);
@@ -1241,6 +1247,11 @@
                                     </div>
                                     
                                     <div class="mb-3">
+                                        <label for="hospitalWebsiteUrl" class="form-label">Website URL</label>
+                                        <input type="url" class="form-control" id="hospitalWebsiteUrl" placeholder="https://www.example.com">
+                                    </div>
+                                    
+                                    <div class="mb-3">
                                         <label for="hospitalImage" class="form-label">Hospital Image</label>
                                         <input type="file" class="form-control" id="hospitalImage" accept="image/*">
                                         <div class="form-text">Upload an image file (JPEG, PNG, GIF, WebP). Max size: 5MB</div>
@@ -1335,6 +1346,11 @@
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="pharmacyWebsiteUrl" class="form-label">Website URL</label>
+                                        <input type="url" class="form-control" id="pharmacyWebsiteUrl" placeholder="https://www.example.com">
                                     </div>
                                     
                                     <div class="mb-3">
@@ -1626,7 +1642,8 @@
                     longitude: parseFloat(document.getElementById('hospitalLongitude').value) || 0.0,
                     hasContract: document.getElementById('hospitalContract').checked,
                     rating: parseFloat(document.getElementById('hospitalRating').value) || 0.0,
-                    imageUrl: document.getElementById('hospitalImageUrl').value
+                    imageUrl: document.getElementById('hospitalImageUrl').value,
+                    websiteUrl: document.getElementById('hospitalWebsiteUrl').value
                 };
                 
                 const response = await fetch('/api/admin/hospitals', {
@@ -1660,7 +1677,8 @@
                     rating: parseFloat(document.getElementById('pharmacyRating').value) || 0.0,
                     acceptPrivateInsurance: document.getElementById('pharmacyInsurance').checked,
                     hasContract: document.getElementById('pharmacyContract').checked,
-                    imageUrl: document.getElementById('pharmacyImageUrl').value
+                    imageUrl: document.getElementById('pharmacyImageUrl').value,
+                    websiteUrl: document.getElementById('pharmacyWebsiteUrl').value
                 };
                 
                 const response = await fetch('/api/admin/pharmacies', {
@@ -1896,6 +1914,490 @@
                 alert('Error removing role: ' + error.message);
             }
         }
+        
+        // Simple logout function
+        function logout() {
+            // Clear all authentication data
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userId');
+            
+            // Clear any other auth-related localStorage items
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const key = localStorage.key(i);
+                if (key && (key.includes('admin') || key.includes('auth') || key.includes('user'))) {
+                    localStorage.removeItem(key);
+                }
+            }
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            
+            console.log('Logout successful - tokens cleared');
+            
+            // Redirect to login
+            window.location.href = '/AdminView/Login';
+        }
+
+        // Edit Hospital Function
+        function editHospital(hospitalId) {
+            console.log('Loading hospital for edit:', hospitalId);
+            
+            // First load the hospital data
+            fetch(`/api/admin/hospitals/${hospitalId}`, { headers: getAuthHeaders() })
+                .then(response => response.json())
+                .then(result => {
+                    if (!result.success) {
+                        alert('Error loading hospital data: ' + (result.message || 'Unknown error'));
+                        return;
+                    }
+                    
+                    const hospital = result.data;
+                    showEditHospitalModal(hospital);
+                })
+                .catch(error => {
+                    console.error('Error loading hospital:', error);
+                    alert('Error loading hospital data');
+                });
+        }
+
+        // Edit Pharmacy Function
+        function editPharmacy(pharmacyId) {
+            console.log('Loading pharmacy for edit:', pharmacyId);
+            
+            // First load the pharmacy data
+            fetch(`/api/admin/pharmacies/${pharmacyId}`, { headers: getAuthHeaders() })
+                .then(response => response.json())
+                .then(result => {
+                    if (!result.success) {
+                        alert('Error loading pharmacy data: ' + (result.message || 'Unknown error'));
+                        return;
+                    }
+                    
+                    const pharmacy = result.data;
+                    showEditPharmacyModal(pharmacy);
+                })
+                .catch(error => {
+                    console.error('Error loading pharmacy:', error);
+                    alert('Error loading pharmacy data');
+                });
+        }
+
+        // Show Edit Hospital Modal
+        function showEditHospitalModal(hospital) {
+            const modalHtml = `
+                <div class="modal fade" id="editHospitalModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Edit Hospital</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="editHospitalForm">
+                                    <input type="hidden" id="editHospitalId" value="${hospital.hospitalId}">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="editHospitalName" class="form-label">Hospital Name *</label>
+                                                <input type="text" class="form-control" id="editHospitalName" value="${hospital.name || ''}" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="editHospitalEstablished" class="form-label">Established Year</label>
+                                                <input type="text" class="form-control" id="editHospitalEstablished" value="${hospital.established || ''}" placeholder="e.g., 1985">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="editHospitalDescription" class="form-label">Description</label>
+                                        <textarea class="form-control" id="editHospitalDescription" rows="3" placeholder="Brief description of the hospital">${hospital.description || ''}</textarea>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="editHospitalAddress" class="form-label">Address *</label>
+                                        <textarea class="form-control" id="editHospitalAddress" rows="2" required>${hospital.location || ''}</textarea>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="editHospitalPhone" class="form-label">Phone Number *</label>
+                                                <input type="tel" class="form-control" id="editHospitalPhone" value="${hospital.contactNumber || ''}" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="editHospitalWebsiteUrl" class="form-label">Website URL</label>
+                                                <input type="url" class="form-control" id="editHospitalWebsiteUrl" value="${hospital.websiteUrl || ''}" placeholder="https://www.example.com">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="editHospitalLatitude" class="form-label">Latitude</label>
+                                                <input type="number" class="form-control" id="editHospitalLatitude" step="any" value="${hospital.latitude || ''}" placeholder="e.g., 40.7128">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="editHospitalLongitude" class="form-label">Longitude</label>
+                                                <input type="number" class="form-control" id="editHospitalLongitude" step="any" value="${hospital.longitude || ''}" placeholder="e.g., -74.0060">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="editHospitalRating" class="form-label">Rating (0-5)</label>
+                                                <input type="number" class="form-control" id="editHospitalRating" min="0" max="5" step="0.1" value="${hospital.rating || 0}">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <div class="form-check mt-4">
+                                                    <input class="form-check-input" type="checkbox" id="editHospitalAvailable" ${hospital.isAvailable ? 'checked' : ''}>
+                                                    <label class="form-check-label" for="editHospitalAvailable">
+                                                        Available for Emergency Services
+                                                    </label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="editHospitalContract" ${hospital.hasContract ? 'checked' : ''}>
+                                                    <label class="form-check-label" for="editHospitalContract">
+                                                        Has Contract with ILLVent
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="editHospitalSpecialties" class="form-label">Specialties</label>
+                                        <input type="text" class="form-control" id="editHospitalSpecialties" value="${(hospital.specialties || []).join(', ')}" placeholder="Separate with commas: e.g., Cardiology, Emergency Care, Surgery">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="editHospitalImage" class="form-label">Hospital Image</label>
+                                        <input type="file" class="form-control" id="editHospitalImage" accept="image/*">
+                                        <div class="form-text">Upload an image file (JPEG, PNG, GIF, WebP). Max size: 5MB</div>
+                                        ${hospital.imageUrl ? `<div class="mt-2"><img src="${hospital.imageUrl}" alt="Current" style="max-width: 200px; max-height: 200px;" class="img-thumbnail"></div>` : ''}
+                                        <div id="editHospitalImagePreview" class="mt-2" style="display: none;">
+                                            <img id="editHospitalPreviewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px;" class="img-thumbnail">
+                                        </div>
+                                        <div id="editHospitalUploadProgress" class="mt-2" style="display: none;">
+                                            <div class="progress">
+                                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="editHospitalImageUrl" value="${hospital.imageUrl || ''}">
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="submitEditHospital()">Update Hospital</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modalHtml;
+            
+            // Add image upload handler
+            document.getElementById('editHospitalImage').addEventListener('change', (e) => handleEditHospitalImageUpload(e));
+            
+            const modal = new bootstrap.Modal(document.getElementById('editHospitalModal'));
+            modal.show();
+        }
+
+        // Show Edit Pharmacy Modal
+        function showEditPharmacyModal(pharmacy) {
+            const modalHtml = `
+                <div class="modal fade" id="editPharmacyModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Edit Pharmacy</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="editPharmacyForm">
+                                    <input type="hidden" id="editPharmacyId" value="${pharmacy.pharmacyId}">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="editPharmacyName" class="form-label">Pharmacy Name *</label>
+                                                <input type="text" class="form-control" id="editPharmacyName" value="${pharmacy.name || ''}" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="editPharmacyRating" class="form-label">Rating (0-5)</label>
+                                                <input type="number" class="form-control" id="editPharmacyRating" min="0" max="5" step="0.1" value="${pharmacy.rating || 0}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="editPharmacyDescription" class="form-label">Description</label>
+                                        <textarea class="form-control" id="editPharmacyDescription" rows="3" placeholder="Brief description of the pharmacy">${pharmacy.description || ''}</textarea>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="editPharmacyAddress" class="form-label">Address *</label>
+                                        <textarea class="form-control" id="editPharmacyAddress" rows="2" required>${pharmacy.location || ''}</textarea>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="editPharmacyPhone" class="form-label">Phone Number *</label>
+                                                <input type="tel" class="form-control" id="editPharmacyPhone" value="${pharmacy.contactNumber || ''}" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="editPharmacyWebsiteUrl" class="form-label">Website URL</label>
+                                                <input type="url" class="form-control" id="editPharmacyWebsiteUrl" value="${pharmacy.websiteUrl || ''}" placeholder="https://www.example.com">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <div class="form-check mt-4">
+                                                    <input class="form-check-input" type="checkbox" id="editPharmacyInsurance" ${pharmacy.acceptPrivateInsurance ? 'checked' : ''}>
+                                                    <label class="form-check-label" for="editPharmacyInsurance">
+                                                        Accepts Private Insurance
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <div class="form-check mt-4">
+                                                    <input class="form-check-input" type="checkbox" id="editPharmacyContract" ${pharmacy.hasContract ? 'checked' : ''}>
+                                                    <label class="form-check-label" for="editPharmacyContract">
+                                                        Has Contract with ILLVent
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="editPharmacyImage" class="form-label">Pharmacy Image</label>
+                                        <input type="file" class="form-control" id="editPharmacyImage" accept="image/*">
+                                        <div class="form-text">Upload an image file (JPEG, PNG, GIF, WebP). Max size: 5MB</div>
+                                        ${pharmacy.imageUrl ? `<div class="mt-2"><img src="${pharmacy.imageUrl}" alt="Current" style="max-width: 200px; max-height: 200px;" class="img-thumbnail"></div>` : ''}
+                                        <div id="editPharmacyImagePreview" class="mt-2" style="display: none;">
+                                            <img id="editPharmacyPreviewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px;" class="img-thumbnail">
+                                        </div>
+                                        <div id="editPharmacyUploadProgress" class="mt-2" style="display: none;">
+                                            <div class="progress">
+                                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="editPharmacyImageUrl" value="${pharmacy.imageUrl || ''}">
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="submitEditPharmacy()">Update Pharmacy</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContainer').innerHTML = modalHtml;
+            
+            // Add image upload handler
+            document.getElementById('editPharmacyImage').addEventListener('change', (e) => handleEditPharmacyImageUpload(e));
+            
+            const modal = new bootstrap.Modal(document.getElementById('editPharmacyModal'));
+            modal.show();
+        }
+
+        // Submit Edit Hospital
+        async function submitEditHospital() {
+            try {
+                const hospitalId = document.getElementById('editHospitalId').value;
+                const specialtiesInput = document.getElementById('editHospitalSpecialties').value;
+                const specialties = specialtiesInput ? 
+                    specialtiesInput.split(',').map(s => s.trim()).filter(s => s.length > 0) : 
+                    ['General Medicine', 'Emergency Care'];
+
+                const data = {
+                    name: document.getElementById('editHospitalName').value,
+                    description: document.getElementById('editHospitalDescription').value,
+                    address: document.getElementById('editHospitalAddress').value,
+                    phone: document.getElementById('editHospitalPhone').value,
+                    established: document.getElementById('editHospitalEstablished').value,
+                    specialties: specialties,
+                    isAvailable: document.getElementById('editHospitalAvailable').checked,
+                    latitude: parseFloat(document.getElementById('editHospitalLatitude').value) || 0.0,
+                    longitude: parseFloat(document.getElementById('editHospitalLongitude').value) || 0.0,
+                    hasContract: document.getElementById('editHospitalContract').checked,
+                    rating: parseFloat(document.getElementById('editHospitalRating').value) || 0.0,
+                    imageUrl: document.getElementById('editHospitalImageUrl').value,
+                    websiteUrl: document.getElementById('editHospitalWebsiteUrl').value
+                };
+                
+                const response = await fetch(`/api/admin/hospitals/${hospitalId}`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editHospitalModal')).hide();
+                    await loadHospitals();
+                    await loadDashboardStats();
+                    alert('Hospital updated successfully!');
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error updating hospital:', error);
+                alert('Error updating hospital: ' + error.message);
+            }
+        }
+
+        // Submit Edit Pharmacy
+        async function submitEditPharmacy() {
+            try {
+                const pharmacyId = document.getElementById('editPharmacyId').value;
+                const data = {
+                    name: document.getElementById('editPharmacyName').value,
+                    description: document.getElementById('editPharmacyDescription').value,
+                    address: document.getElementById('editPharmacyAddress').value,
+                    phone: document.getElementById('editPharmacyPhone').value,
+                    rating: parseFloat(document.getElementById('editPharmacyRating').value) || 0.0,
+                    acceptPrivateInsurance: document.getElementById('editPharmacyInsurance').checked,
+                    hasContract: document.getElementById('editPharmacyContract').checked,
+                    imageUrl: document.getElementById('editPharmacyImageUrl').value,
+                    websiteUrl: document.getElementById('editPharmacyWebsiteUrl').value
+                };
+                
+                const response = await fetch(`/api/admin/pharmacies/${pharmacyId}`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editPharmacyModal')).hide();
+                    await loadPharmacies();
+                    await loadDashboardStats();
+                    alert('Pharmacy updated successfully!');
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error updating pharmacy:', error);
+                alert('Error updating pharmacy: ' + error.message);
+            }
+        }
+
+        // Edit Image Upload Handlers
+        async function handleEditHospitalImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('editHospitalPreviewImg').src = e.target.result;
+                document.getElementById('editHospitalImagePreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Upload image
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            const progressBar = document.querySelector('#editHospitalUploadProgress .progress-bar');
+            document.getElementById('editHospitalUploadProgress').style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/admin/hospitals/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('editHospitalImageUrl').value = result.imageUrl;
+                    progressBar.style.width = '100%';
+                    progressBar.classList.add('bg-success');
+                    setTimeout(() => {
+                        document.getElementById('editHospitalUploadProgress').style.display = 'none';
+                    }, 1000);
+                } else {
+                    alert('Error uploading image: ' + result.message);
+                    progressBar.classList.add('bg-danger');
+                }
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                alert('Error uploading image: ' + error.message);
+                progressBar.classList.add('bg-danger');
+            }
+        }
+
+        async function handleEditPharmacyImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('editPharmacyPreviewImg').src = e.target.result;
+                document.getElementById('editPharmacyImagePreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Upload image
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            const progressBar = document.querySelector('#editPharmacyUploadProgress .progress-bar');
+            document.getElementById('editPharmacyUploadProgress').style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/admin/pharmacies/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('editPharmacyImageUrl').value = result.imageUrl;
+                    progressBar.style.width = '100%';
+                    progressBar.classList.add('bg-success');
+                    setTimeout(() => {
+                        document.getElementById('editPharmacyUploadProgress').style.display = 'none';
+                    }, 1000);
+                } else {
+                    alert('Error uploading image: ' + result.message);
+                    progressBar.classList.add('bg-danger');
+                }
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                alert('Error uploading image: ' + error.message);
+                progressBar.classList.add('bg-danger');
+            }
+        }
+
     </script>
 </body>
 </html> 

@@ -11,7 +11,7 @@ namespace ILLVentApp.Application.Interfaces
         Task<IEnumerable<DoctorListDTO>> GetAllDoctorsAsync();
         Task<DoctorDetailsDTO> GetDoctorDetailsAsync(int id);
         Task<IEnumerable<TimeSlotDTO>> GetDoctorDayScheduleAsync(int doctorId, DateTime date);
-        Task<AppointmentResponseDTO> CreateAppointmentAsync(AppointmentRequestWithUser appointment);
+        Task<AppointmentResult> CreateAppointmentAsync(AppointmentRequestWithUser appointment);
         Task<AppointmentCancellationResponse> CancelAppointmentAsync(int appointmentId, string userId);
         Task<IEnumerable<AppointmentResponseDTO>> GetUserAppointmentsAsync(string userId);
     }

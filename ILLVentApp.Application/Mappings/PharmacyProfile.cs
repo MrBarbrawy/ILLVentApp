@@ -16,7 +16,12 @@ namespace ILLVentApp.Application.Mappings
                 .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.Location))
                 .ForMember(dest => dest.Rating, opt => opt.MapFrom(src => src.Rating))
                 .ForMember(dest => dest.ContactNumber, opt => opt.MapFrom(src => src.ContactNumber))
-                .ForMember(dest => dest.AcceptPrivateInsurance, opt => opt.MapFrom(src => src.AcceptPrivateInsurance));
+                .ForMember(dest => dest.AcceptPrivateInsurance, opt => opt.MapFrom(src => src.AcceptPrivateInsurance))
+                .ForMember(dest => dest.HasContract, opt => opt.MapFrom(src => src.HasContract))
+                .ForMember(dest => dest.WebsiteUrl, opt => opt.MapFrom(src => src.WebsiteUrl));
+
+            CreateMap<CreatePharmacyDto, Pharmacy>();
+            CreateMap<UpdatePharmacyDto, Pharmacy>();
         }
     }
 } 

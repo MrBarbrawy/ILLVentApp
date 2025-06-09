@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using ILLVentApp.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Text.Json;
-using ILLVentApp.Infrastructure.Data.Seeding;
+
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace ILLVentApp.Infrastructure.Data.Contexts
@@ -229,6 +229,9 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 				entity.Property(h => h.Established)
 					.HasMaxLength(50);
 
+				entity.Property(h => h.WebsiteUrl)
+					.HasMaxLength(500);
+
 				// Configure Specialties as a JSON column
 				entity.Property(h => h.Specialties)
 					.HasConversion(
@@ -283,6 +286,9 @@ namespace ILLVentApp.Infrastructure.Data.Contexts
 				entity.Property(p => p.ContactNumber)
 					.IsRequired()
 					.HasMaxLength(20);
+
+				entity.Property(p => p.WebsiteUrl)
+					.HasMaxLength(500);
 			});
 		}
 

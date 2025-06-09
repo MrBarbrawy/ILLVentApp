@@ -3,6 +3,7 @@ using ILLVentApp.Application.Interfaces;
 using ILLVentApp.Domain.Interfaces;
 using ILLVentApp.Domain.DTOs;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,14 +17,16 @@ namespace ILLVentApp.Application.Services
     {
         private readonly IAppDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ILogger<DoctorService> _logger;
         private const string AzureBaseUrl = "https://illventapp.azurewebsites.net";
         private static readonly Dictionary<string, List<TimeSlotDTO>> _timeSlotCache = new();
         private static readonly object _cacheLock = new();
 
-        public DoctorService(IAppDbContext context, IMapper mapper)
+        public DoctorService(IAppDbContext context, IMapper mapper, ILogger<DoctorService> logger)
         {
             _context = context;
             _mapper = mapper;
+            _logger = logger;
         }
 
         private void AddFullUrls(DoctorListDTO doctor)
@@ -127,21 +130,18 @@ namespace ILLVentApp.Application.Services
                 var isBooked = bookedAppointments.Any(a => 
                     a.StartTime == currentTime);
 
-                // Only add unbooked slots
-                if (!isBooked)
-                {
-                    var slotStart = date.Add(currentTime);
-                    var slotEnd = slotStart.Add(slotDuration);
+                // Add ALL slots - both reserved and available
+                var slotStart = date.Add(currentTime);
+                var slotEnd = slotStart.Add(slotDuration);
 
-                    timeSlots.Add(new TimeSlotDTO
-                    {
-                        StartTime = slotStart,
-                        EndTime = slotEnd,
-                        IsReserved = false,
-                        FormattedStartTime = FormatTimeWithout24Hour(slotStart),
-                        FormattedEndTime = FormatTimeWithout24Hour(slotEnd)
-                    });
-                }
+                timeSlots.Add(new TimeSlotDTO
+                {
+                    StartTime = slotStart,
+                    EndTime = slotEnd,
+                    IsReserved = isBooked, // Set IsReserved based on whether slot is booked
+                    FormattedStartTime = FormatTimeWithout24Hour(slotStart),
+                    FormattedEndTime = FormatTimeWithout24Hour(slotEnd)
+                });
 
                 currentTime = currentTime.Add(slotDuration);
             }
@@ -314,132 +314,188 @@ namespace ILLVentApp.Application.Services
             return false;
         }
 
-        public async Task<AppointmentResponseDTO> CreateAppointmentAsync(AppointmentRequestWithUser appointmentRequest)
+        public async Task<AppointmentResult> CreateAppointmentAsync(AppointmentRequestWithUser appointmentRequest)
         {
-            var doctor = await _context.Doctors
-                .FirstOrDefaultAsync(d => d.DoctorId == appointmentRequest.DoctorId);
-
-            if (doctor == null)
-                throw new InvalidOperationException("Doctor not found.");
-
-            // Parse the time string - handle both 12-hour and 24-hour formats
-            TimeSpan startTime;
-            if (!TryParseTimeString(appointmentRequest.StartTime, out startTime))
+            using var transaction = await _context.BeginTransactionAsync();
+            try
             {
-                throw new InvalidOperationException("Invalid time format. Please use HH:mm format (24-hour) or h:mm AM/PM format.");
-            }
-
-            var currentDateTime = DateTime.Now;
-
-            // Validate if trying to book a past date
-            if (appointmentRequest.AppointmentDate.Date < currentDateTime.Date)
-            {
-                throw new InvalidOperationException("Cannot book appointments for past dates.");
-            }
-
-            // If booking for today, validate that the time slot hasn't passed
-            if (appointmentRequest.AppointmentDate.Date == currentDateTime.Date && 
-                startTime <= currentDateTime.TimeOfDay)
-            {
-                throw new InvalidOperationException("Cannot book time slots that are in the past for today.");
-            }
-
-            // Check if user already has an active appointment with this doctor
-            var existingUserAppointment = await _context.Appointments
-                .FirstOrDefaultAsync(a => 
-                    a.DoctorId == appointmentRequest.DoctorId &&
-                    a.UserId == appointmentRequest.UserId &&
-                    a.Status != "Cancelled" &&
-                    a.AppointmentDate >= currentDateTime.Date);
-
-            if (existingUserAppointment != null)
-            {
-                throw new InvalidOperationException(
-                    $"You already have an active appointment with Dr. {doctor.Name} on " +
-                    $"{existingUserAppointment.AppointmentDate.ToString("dddd, MMMM d, yyyy")} at " +
-                    $"{FormatTime(existingUserAppointment.StartTime)}. " +
-                    "Please cancel your existing appointment before booking a new one.");
-            }
-
-            // Validate appointment time
-            if (!doctor.WorkingDaysArray.Contains(appointmentRequest.AppointmentDate.DayOfWeek))
-                throw new InvalidOperationException("The selected date is not a working day for this doctor.");
-
-            // Debug logging for working hours validation
-            var endTimeForSlot = startTime.Add(TimeSpan.FromMinutes(doctor.SlotDurationMinutes));
-            if (startTime < doctor.StartTime ||
-                endTimeForSlot > doctor.EndTime)
-            {
-                throw new InvalidOperationException(
-                    $"The selected time is outside the doctor's working hours. " +
-                    $"Requested: {startTime:hh\\:mm} - {endTimeForSlot:hh\\:mm}, " +
-                    $"Doctor hours: {doctor.StartTime:hh\\:mm} - {doctor.EndTime:hh\\:mm}");
-            }
-
-            // Check if the time slot is already booked
-            var endTime = startTime.Add(TimeSpan.FromMinutes(doctor.SlotDurationMinutes));
-            var existingAppointment = await _context.Appointments
-                .FirstOrDefaultAsync(a => 
-                    a.DoctorId == appointmentRequest.DoctorId &&
-                    a.AppointmentDate.Date == appointmentRequest.AppointmentDate.Date &&
-                    a.Status != "Cancelled" &&
-                    ((a.StartTime <= startTime && a.EndTime > startTime) ||
-                     (a.StartTime < endTime && a.EndTime >= endTime) ||
-                     (startTime <= a.StartTime && endTime >= a.EndTime)));
-
-            if (existingAppointment != null)
-            {
-                throw new InvalidOperationException("This time slot is already booked. Please select a different time slot.");
-            }
-
-            // Create appointment
-            var appointment = new AppointmentDTO
-            {
-                DoctorId = appointmentRequest.DoctorId,
-                UserId = appointmentRequest.UserId,
-                PatientName = appointmentRequest.PatientName,
-                PatientAge = appointmentRequest.PatientAge,
-                PatientGender = appointmentRequest.PatientGender,
-                PatientPhoneNumber = appointmentRequest.PatientPhoneNumber,
-                AppointmentDate = appointmentRequest.AppointmentDate,
-                StartTime = startTime,
-                EndTime = endTime,
-                CreatedAt = DateTime.UtcNow,
-                Status = "Confirmed"
-            };
-
-            var appointmentEntity = _mapper.Map<Appointment>(appointment);
-            _context.Appointments.Add(appointmentEntity);
-            await _context.SaveChangesAsync();
-
-            // Update cache
-            var cacheKey = GetTimeSlotCacheKey(doctor.DoctorId, appointmentRequest.AppointmentDate);
-            lock (_cacheLock)
-            {
-                if (_timeSlotCache.TryGetValue(cacheKey, out var cachedSlots))
+                // 2. Authentication/Authorization Errors
+                if (string.IsNullOrWhiteSpace(appointmentRequest?.UserId))
                 {
-                    var slot = cachedSlots.FirstOrDefault(s => 
-                        s.StartTime.TimeOfDay == startTime);
-                    if (slot != null)
+                    return AppointmentResult.UserNotAuthenticated();
+                }
+
+                // Basic input validation
+                if (appointmentRequest.DoctorId <= 0)
+                {
+                    return AppointmentResult.Failure("Invalid doctor selection");
+                }
+
+                if (string.IsNullOrWhiteSpace(appointmentRequest.StartTime))
+                {
+                    return AppointmentResult.Failure("Appointment time is required");
+                }
+
+                if (string.IsNullOrWhiteSpace(appointmentRequest.PatientName))
+                {
+                    return AppointmentResult.Failure("Patient name is required");
+                }
+
+                // Find doctor with error handling
+                var doctor = await _context.Doctors
+                    .FirstOrDefaultAsync(d => d.DoctorId == appointmentRequest.DoctorId);
+
+                if (doctor == null)
+                {
+                    return AppointmentResult.DoctorNotFound();
+                }
+
+                // 4. Date/Time Validation Errors
+                TimeSpan startTime;
+                if (!TryParseTimeString(appointmentRequest.StartTime, out startTime))
+                {
+                    return AppointmentResult.InvalidTimeFormat();
+                }
+
+                var currentDateTime = DateTime.Now;
+                var appointmentDate = appointmentRequest.AppointmentDate.Date;
+                var currentDate = currentDateTime.Date;
+
+                // Validate if trying to book a past date
+                if (appointmentDate < currentDate)
+                {
+                    return AppointmentResult.PastDate();
+                }
+
+                // If booking for today, validate that the time slot hasn't passed
+                if (appointmentDate == currentDate && startTime <= currentDateTime.TimeOfDay)
+                {
+                    return AppointmentResult.PastTimeSlot();
+                }
+
+                // Validate appointment time against doctor's working days
+                if (!doctor.WorkingDaysArray.Contains(appointmentRequest.AppointmentDate.DayOfWeek))
+                {
+                    return AppointmentResult.NonWorkingDay();
+                }
+
+                // Validate appointment time against doctor's working hours
+                var endTimeForSlot = startTime.Add(TimeSpan.FromMinutes(doctor.SlotDurationMinutes));
+                if (startTime < doctor.StartTime || endTimeForSlot > doctor.EndTime)
+                {
+                    return AppointmentResult.OutsideWorkingHours(doctor.StartTime, doctor.EndTime);
+                }
+
+                // 5. Appointment Conflict Errors
+                // Check if user already has an active appointment with this doctor
+                var existingUserAppointment = await _context.Appointments
+                    .FirstOrDefaultAsync(a => 
+                        a.DoctorId == appointmentRequest.DoctorId &&
+                        a.UserId == appointmentRequest.UserId &&
+                        a.Status != "Cancelled" &&
+                        a.AppointmentDate >= currentDate);
+
+                if (existingUserAppointment != null)
+                {
+                    return AppointmentResult.ExistingAppointment(
+                        doctor.Name, 
+                        existingUserAppointment.AppointmentDate, 
+                        existingUserAppointment.StartTime);
+                }
+
+                // Check if the time slot is already booked
+                var endTime = startTime.Add(TimeSpan.FromMinutes(doctor.SlotDurationMinutes));
+                var existingAppointment = await _context.Appointments
+                    .FirstOrDefaultAsync(a => 
+                        a.DoctorId == appointmentRequest.DoctorId &&
+                        a.AppointmentDate.Date == appointmentDate &&
+                        a.Status != "Cancelled" &&
+                        ((a.StartTime <= startTime && a.EndTime > startTime) ||
+                         (a.StartTime < endTime && a.EndTime >= endTime) ||
+                         (startTime <= a.StartTime && endTime >= a.EndTime)));
+
+                if (existingAppointment != null)
+                {
+                    return AppointmentResult.TimeSlotTaken();
+                }
+
+                // Create appointment
+                var appointment = new AppointmentDTO
+                {
+                    DoctorId = appointmentRequest.DoctorId,
+                    UserId = appointmentRequest.UserId,
+                    PatientName = appointmentRequest.PatientName?.Trim(),
+                    PatientAge = appointmentRequest.PatientAge,
+                    PatientGender = appointmentRequest.PatientGender?.Trim(),
+                    PatientPhoneNumber = appointmentRequest.PatientPhoneNumber?.Trim(),
+                    AppointmentDate = appointmentRequest.AppointmentDate,
+                    StartTime = startTime,
+                    EndTime = endTime,
+                    CreatedAt = DateTime.UtcNow,
+                    Status = "Confirmed"
+                };
+
+                // 6. System Errors - Database transaction handling
+                try
+                {
+                    var appointmentEntity = _mapper.Map<Appointment>(appointment);
+                    _context.Appointments.Add(appointmentEntity);
+                    await _context.SaveChangesAsync();
+                    
+                    // Update cache
+                    var cacheKey = GetTimeSlotCacheKey(doctor.DoctorId, appointmentRequest.AppointmentDate);
+                    lock (_cacheLock)
                     {
-                        slot.IsReserved = true;
+                        if (_timeSlotCache.TryGetValue(cacheKey, out var cachedSlots))
+                        {
+                            var slot = cachedSlots.FirstOrDefault(s => 
+                                s.StartTime.TimeOfDay == startTime);
+                            if (slot != null)
+                            {
+                                slot.IsReserved = true;
+                            }
+                        }
                     }
+
+                    await transaction.CommitAsync();
+
+                    var responseDto = new AppointmentResponseDTO
+                    {
+                        Id = appointmentEntity.AppointmentId,
+                        DoctorId = doctor.DoctorId,
+                        DoctorName = doctor.Name,
+                        DoctorSpecialty = doctor.Specialty,
+                        AppointmentDate = appointment.AppointmentDate,
+                        DayOfWeek = appointment.AppointmentDate.DayOfWeek.ToString(),
+                        FormattedTime = $"{FormatTime(appointment.StartTime)} - {FormatTime(appointment.EndTime)}",
+                        PatientName = appointment.PatientName,
+                        Status = appointment.Status,
+                        CreatedAt = appointment.CreatedAt
+                    };
+
+                    return AppointmentResult.Successful(responseDto, "Appointment booked successfully");
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    await transaction.RollbackAsync();
+                    return AppointmentResult.ConcurrencyError();
+                }
+                catch (DbUpdateException)
+                {
+                    await transaction.RollbackAsync();
+                    return AppointmentResult.DatabaseError();
+                }
+                catch (Exception)
+                {
+                    await transaction.RollbackAsync();
+                    return AppointmentResult.TransactionError();
                 }
             }
-
-            return new AppointmentResponseDTO
+            catch (Exception)
             {
-                Id = appointmentEntity.AppointmentId,
-                DoctorId = doctor.DoctorId,
-                DoctorName = doctor.Name,
-                DoctorSpecialty = doctor.Specialty,
-                AppointmentDate = appointment.AppointmentDate,
-                DayOfWeek = appointment.AppointmentDate.DayOfWeek.ToString(),
-                FormattedTime = $"{FormatTime(appointment.StartTime)} - {FormatTime(appointment.EndTime)}",
-                PatientName = appointment.PatientName,
-                Status = appointment.Status,
-                CreatedAt = appointment.CreatedAt
-            };
+                await transaction.RollbackAsync();
+                return AppointmentResult.SystemError();
+            }
         }
 
         public class AppointmentCancellationResponse

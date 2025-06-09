@@ -23,7 +23,11 @@ namespace ILLVentApp.Application.Mappings
                 .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.IsAvailable))
                 .ForMember(dest => dest.Latitude, opt => opt.MapFrom(src => src.Latitude))
                 .ForMember(dest => dest.Longitude, opt => opt.MapFrom(src => src.Longitude))
-                .ForMember(dest => dest.HasContract, opt => opt.MapFrom(src => src.HasContract));
+                .ForMember(dest => dest.HasContract, opt => opt.MapFrom(src => src.HasContract))
+                .ForMember(dest => dest.WebsiteUrl, opt => opt.MapFrom(src => src.WebsiteUrl));
+
+            CreateMap<CreateHospitalDto, Hospital>();
+            CreateMap<UpdateHospitalDto, Hospital>();
         }
     }
 }

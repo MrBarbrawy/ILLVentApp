@@ -39,11 +39,18 @@ namespace ILLVentApp.Application.Services
             _configuration = configuration;
         }
 
-        public async Task<EmergencyRequestResponseDto> CreateEmergencyRequestAsync(string userId, CreateEmergencyRequestDto request)
+        public async Task<EmergencyResult> CreateEmergencyRequestAsync(string userId, CreateEmergencyRequestDto request)
         {
             try
             {
                 _logger.LogInformation("Creating emergency request for user {UserId}", userId);
+
+                // 🔐 AUTHENTICATION/SECURITY VALIDATION
+                if (string.IsNullOrEmpty(userId))
+                {
+                    _logger.LogWarning("Emergency request attempted without user authentication");
+                    return EmergencyResult.UserNotAuthenticated();
+                }
 
                 // Check if user already has an active emergency request
                 var existingRequest = await _context.EmergencyRescueRequests
@@ -52,27 +59,31 @@ namespace ILLVentApp.Application.Services
 
                 if (existingRequest != null)
                 {
-                    return new EmergencyRequestResponseDto
-                    {
-                        Success = false,
-                        Message = "You already have an active emergency request",
-                        RequestId = existingRequest.RequestId
-                    };
+                    _logger.LogWarning("User {UserId} attempted to create emergency request with existing active request {RequestId}", userId, existingRequest.RequestId);
+                    return EmergencyResult.ExistingActiveRequest(existingRequest.RequestId);
                 }
 
-                // Get medical history if provided (using your existing anonymous endpoints)
+                // 📝 MEDICAL HISTORY VALIDATION - QR code and token validation
                 var medicalHistoryData = await GetMedicalHistoryForEmergencyAsync(request.MedicalHistoryQrCode, request.MedicalHistoryToken);
 
-                // AUTOMATIC HOSPITAL SELECTION FROM CONFIGURATION
+                // 🔥 CRITICAL SYSTEM ERRORS - Database connectivity check
+                try
+                {
+                    await _context.EmergencyRescueRequests.CountAsync();
+                }
+                catch (Exception dbEx)
+                {
+                    _logger.LogCritical(dbEx, "Database connection lost during emergency request creation for user {UserId}", userId);
+                    return EmergencyResult.DatabaseConnectionLost();
+                }
+
+                // 🏥 HOSPITAL AVAILABILITY - No hospitals, all rejected scenarios
                 var targetHospitalIds = await GetTargetHospitalsAsync();
                 
                 if (!targetHospitalIds.Any())
                 {
-                    return new EmergencyRequestResponseDto
-                    {
-                        Success = false,
-                        Message = "No target hospitals configured. Please contact system administrator."
-                    };
+                    _logger.LogCritical("No emergency hospitals configured in system during emergency request for user {UserId}", userId);
+                    return EmergencyResult.NoHospitalsConfigured();
                 }
 
                 _logger.LogInformation("Automatically targeting {Count} hospitals: {HospitalIds}", 
@@ -85,11 +96,8 @@ namespace ILLVentApp.Application.Services
 
                 if (!selectedHospitals.Any())
                 {
-                    return new EmergencyRequestResponseDto
-                    {
-                        Success = false,
-                        Message = "None of the configured hospitals are currently available. Please call emergency services directly."
-                    };
+                    _logger.LogCritical("All configured hospitals unavailable during emergency request for user {UserId}. Hospitals: {HospitalIds}", userId, string.Join(", ", targetHospitalIds));
+                    return EmergencyResult.AllHospitalsUnavailable();
                 }
 
                 // Log which hospitals were found vs configured
@@ -124,25 +132,60 @@ namespace ILLVentApp.Application.Services
                     RequestPriority = request.Priority ?? 1
                 };
 
-                // Handle injury photo if provided
+                // 📸 MEDIA UPLOAD - Photo handling and storage
                 if (!string.IsNullOrEmpty(request.InjuryPhotoBase64))
                 {
-                    // TODO: Upload to Azure Blob Storage and encrypt URL
-                    // For now, we'll store a placeholder indicating photo was provided
-                    emergencyRequest.InjuryPhotoUrl = "PHOTO_PROVIDED";
-                    emergencyRequest.RequestImage = "PHOTO_PROVIDED";
+                    try
+                    {
+                        // Validate photo format and size
+                        if (request.InjuryPhotoBase64.Length > 5 * 1024 * 1024) // 5MB limit
+                        {
+                            _logger.LogWarning("Photo too large for emergency request by user {UserId}", userId);
+                            // Continue without photo but log the issue
+                            emergencyRequest.InjuryPhotoUrl = "PHOTO_TOO_LARGE";
+                        }
+                        else
+                        {
+                            // TODO: Upload to Azure Blob Storage and encrypt URL
+                            // For now, store placeholder indicating photo was provided
+                            emergencyRequest.InjuryPhotoUrl = "PHOTO_PROVIDED";
+                            emergencyRequest.RequestImage = "PHOTO_PROVIDED";
+                        }
+                    }
+                    catch (Exception photoEx)
+                    {
+                        _logger.LogWarning(photoEx, "Photo upload failed for emergency request by user {UserId}", userId);
+                        emergencyRequest.InjuryPhotoUrl = "PHOTO_UPLOAD_FAILED";
+                    }
                 }
 
-                _context.EmergencyRescueRequests.Add(emergencyRequest);
-                await _context.SaveChangesAsync();
+                // 🔥 CRITICAL SYSTEM ERRORS - Transaction handling
+                try
+                {
+                    _context.EmergencyRescueRequests.Add(emergencyRequest);
+                    await _context.SaveChangesAsync();
+                }
+                catch (Exception saveEx)
+                {
+                    _logger.LogCritical(saveEx, "Failed to save emergency request for user {UserId}", userId);
+                    return EmergencyResult.DatabaseConnectionLost();
+                }
 
                 _logger.LogInformation("Emergency request {RequestId} created successfully and sent to {Count} hospitals", 
                     emergencyRequest.RequestId, targetHospitals.Count);
 
-                // Notify hospitals via SignalR
-                await NotifyHospitalsAsync(emergencyRequest, targetHospitals);
+                // 📡 COMMUNICATION - SignalR and notification systems
+                try
+                {
+                    await NotifyHospitalsAsync(emergencyRequest, targetHospitals);
+                }
+                catch (Exception signalREx)
+                {
+                    _logger.LogError(signalREx, "SignalR notification failed for emergency request {RequestId}", emergencyRequest.RequestId);
+                    // Don't fail the entire request - hospitals can still be notified through other means
+                }
 
-                // Prepare response
+                // Prepare successful response
                 var hospitalDtos = targetHospitals.Select(h => new NearbyHospitalDto
                 {
                     HospitalId = h.HospitalId,
@@ -154,7 +197,7 @@ namespace ILLVentApp.Application.Services
                     Specialties = h.Specialties
                 }).ToList();
                 
-                return new EmergencyRequestResponseDto
+                var responseDto = new EmergencyRequestResponseDto
                 {
                     Success = true,
                     Message = $"Emergency request sent to {targetHospitals.Count} hospital(s) automatically.",
@@ -162,15 +205,27 @@ namespace ILLVentApp.Application.Services
                     NearbyHospitals = hospitalDtos,
                     TrackingId = $"EMR_{emergencyRequest.RequestId}"
                 };
+
+                return EmergencyResult.Successful(responseDto);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating emergency request for user {UserId}", userId);
-                return new EmergencyRequestResponseDto
+                _logger.LogCritical(ex, "Unhandled error creating emergency request for user {UserId}", userId);
+                
+                // Check if it's a network/timeout issue
+                if (ex.Message.Contains("timeout") || ex.Message.Contains("network"))
                 {
-                    Success = false,
-                    Message = "An error occurred while creating your emergency request. Please try again."
-                };
+                    return EmergencyResult.NetworkTimeout();
+                }
+                
+                // Check if it's a database issue
+                if (ex.Message.Contains("database") || ex.Message.Contains("connection"))
+                {
+                    return EmergencyResult.DatabaseConnectionLost();
+                }
+                
+                // Unknown critical system failure
+                return EmergencyResult.CoreSystemFailure();
             }
         }
 
@@ -243,10 +298,16 @@ namespace ILLVentApp.Application.Services
             }
         }
 
-        public async Task<bool> RespondToEmergencyRequestAsync(HospitalEmergencyResponseDto response)
+        public async Task<HospitalResponseResult> RespondToEmergencyRequestAsync(HospitalEmergencyResponseDto response)
         {
             try
             {
+                // Validate input
+                if (response == null || response.RequestId <= 0 || response.HospitalId <= 0)
+                {
+                    return HospitalResponseResult.Error("Invalid response data provided");
+                }
+
                 var request = await _context.EmergencyRescueRequests
                     .Where(r => r.RequestId == response.RequestId && r.RequestStatus == "Pending")
                     .FirstOrDefaultAsync();
@@ -254,7 +315,7 @@ namespace ILLVentApp.Application.Services
                 if (request == null)
                 {
                     _logger.LogWarning("Emergency request {RequestId} not found or not pending", response.RequestId);
-                    return false;
+                    return HospitalResponseResult.Error("Emergency request not found or already processed");
                 }
 
                 if (response.IsAccepted)
@@ -294,6 +355,9 @@ namespace ILLVentApp.Application.Services
 
                     _logger.LogInformation("Emergency request {RequestId} accepted by hospital {HospitalId}", 
                         response.RequestId, response.HospitalId);
+
+                    await _context.SaveChangesAsync();
+                    return HospitalResponseResult.Accepted(response.EstimatedResponseTimeMinutes ?? 15);
                 }
                 else
                 {
@@ -327,29 +391,46 @@ namespace ILLVentApp.Application.Services
 
                     _logger.LogInformation("Emergency request {RequestId} rejected by hospital {HospitalId}: {Message}", 
                         response.RequestId, response.HospitalId, response.ResponseMessage);
-                }
 
-                await _context.SaveChangesAsync();
-                return true;
+                    // 🚨 CRITICAL: Check if ALL hospitals have now rejected this request
+                    await CheckAllHospitalsRejectedAsync(request, rejectedIds);
+
+                    await _context.SaveChangesAsync();
+                    return HospitalResponseResult.Rejected(response.ResponseMessage ?? "Hospital cannot accept this request at this time");
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error responding to emergency request {RequestId}", response.RequestId);
-                return false;
+                return HospitalResponseResult.Error($"System error processing hospital response: {ex.Message}");
             }
         }
 
-        public async Task<bool> UpdateEmergencyLocationAsync(LocationUpdateDto locationUpdate)
+        public async Task<LocationUpdateResult> UpdateEmergencyLocationAsync(LocationUpdateDto locationUpdate)
         {
             try
             {
+                // Validate input
+                if (locationUpdate == null || locationUpdate.RequestId <= 0)
+                {
+                    return LocationUpdateResult.Failed("Invalid location update data");
+                }
+
+                // Validate coordinates
+                if (Math.Abs(locationUpdate.Latitude) > 90 || Math.Abs(locationUpdate.Longitude) > 180)
+                {
+                    return LocationUpdateResult.Failed("Invalid GPS coordinates provided");
+                }
+
                 var request = await _context.EmergencyRescueRequests
                     .Where(r => r.RequestId == locationUpdate.RequestId && 
                                (r.RequestStatus == "Pending" || r.RequestStatus == "Accepted"))
                     .FirstOrDefaultAsync();
 
                 if (request == null)
-                    return false;
+                {
+                    return LocationUpdateResult.Failed("Emergency request not found or not active");
+                }
 
                 // Update location
                 request.UserLatitude = locationUpdate.Latitude;
@@ -359,21 +440,29 @@ namespace ILLVentApp.Application.Services
                 await _context.SaveChangesAsync();
 
                 // Notify tracking parties via SignalR
-                await _hubContext.Clients.Group($"Emergency_{request.RequestId}")
-                    .SendAsync("LocationUpdated", new
-                    {
-                        RequestId = request.RequestId,
-                        Latitude = locationUpdate.Latitude,
-                        Longitude = locationUpdate.Longitude,
-                        Timestamp = locationUpdate.Timestamp
-                    });
+                try
+                {
+                    await _hubContext.Clients.Group($"Emergency_{request.RequestId}")
+                        .SendAsync("LocationUpdated", new
+                        {
+                            RequestId = request.RequestId,
+                            Latitude = locationUpdate.Latitude,
+                            Longitude = locationUpdate.Longitude,
+                            Timestamp = locationUpdate.Timestamp
+                        });
+                }
+                catch (Exception signalREx)
+                {
+                    _logger.LogWarning(signalREx, "Failed to send real-time location update for request {RequestId}", request.RequestId);
+                    // Continue - location was saved even if real-time notification failed
+                }
 
-                return true;
+                return LocationUpdateResult.Successful(locationUpdate.Latitude, locationUpdate.Longitude);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating location for emergency request {RequestId}", locationUpdate.RequestId);
-                return false;
+                return LocationUpdateResult.Failed($"System error updating location: {ex.Message}");
             }
         }
 
@@ -749,5 +838,57 @@ namespace ILLVentApp.Application.Services
                 return new List<int>();
             }
         }
+
+        /// <summary>
+        /// 🚨 CRITICAL: Check if all hospitals have rejected and notify user to call 123
+        /// </summary>
+        private async Task CheckAllHospitalsRejectedAsync(EmergencyRescueRequest request, List<int> rejectedIds)
+        {
+            try
+            {
+                // Get the original hospitals that were notified
+                List<int> notifiedHospitalIds;
+                try
+                {
+                    notifiedHospitalIds = string.IsNullOrEmpty(request.NotifiedHospitalIds) 
+                        ? new List<int>() 
+                        : JsonSerializer.Deserialize<List<int>>(request.NotifiedHospitalIds);
+                }
+                catch
+                {
+                    _logger.LogWarning("Could not parse NotifiedHospitalIds for request {RequestId}", request.RequestId);
+                    return;
+                }
+
+                // Check if ALL notified hospitals have now rejected
+                bool allHospitalsRejected = notifiedHospitalIds.All(hospitalId => rejectedIds.Contains(hospitalId));
+
+                if (allHospitalsRejected && notifiedHospitalIds.Count > 0)
+                {
+                    _logger.LogCritical("🚨 ALL HOSPITALS REJECTED emergency request {RequestId}. User notified to call 123.", request.RequestId);
+
+                    // Update request status
+                    request.RequestStatus = "AllRejected";
+
+                    // 📡 SEND SIMPLE MESSAGE TO USER
+                    await _hubContext.Clients.Group($"User_{request.UserId}")
+                        .SendAsync("AllHospitalsRejected", new
+                        {
+                            RequestId = request.RequestId,
+                            Message = "All hospitals have rejected your emergency request. Please call 123 immediately for emergency assistance.",
+                            EmergencyNumber = "123",
+                            Timestamp = DateTime.Now
+                        });
+
+                    _logger.LogInformation("User {UserId} notified that all hospitals rejected request {RequestId}", request.UserId, request.RequestId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking all hospitals rejected for request {RequestId}", request.RequestId);
+            }
+        }
+
+
     }
 } 

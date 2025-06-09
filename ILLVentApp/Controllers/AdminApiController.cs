@@ -439,7 +439,8 @@ namespace ILLVentApp.Controllers
                     HasContract = request.HasContract,
                     Rating = request.Rating,
                     ImageUrl = request.ImageUrl,
-                    Thumbnail = request.ImageUrl // Use same image for thumbnail
+                    Thumbnail = request.ImageUrl,
+                    WebsiteUrl = request.WebsiteUrl
                 };
 
                 var result = await _hospitalService.CreateHospitalAsync(createHospitalDto);
@@ -468,23 +469,75 @@ namespace ILLVentApp.Controllers
         {
             try
             {
-                _logger.LogInformation("Hospital deletion request received: {HospitalId}", id);
-                
                 var result = await _hospitalService.DeleteHospitalAsync(id);
-                
-                if (result)
-                {
-                    return Ok(new { success = true, message = "Hospital deleted successfully" });
-                }
-                else
+                if (!result)
                 {
                     return NotFound(new { success = false, message = "Hospital not found" });
                 }
+
+                _logger.LogInformation("Hospital deleted successfully: {HospitalId}", id);
+                return Ok(new { success = true, message = "Hospital deleted successfully" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting hospital {HospitalId}", id);
                 return StatusCode(500, new { success = false, message = "Error deleting hospital" });
+            }
+        }
+
+        [HttpGet("hospitals/{id}")]
+        public async Task<IActionResult> GetHospital(int id)
+        {
+            try
+            {
+                var hospital = await _hospitalService.GetHospitalByIdAsync(id);
+                if (hospital == null)
+                {
+                    return NotFound(new { success = false, message = "Hospital not found" });
+                }
+                
+                return Ok(new { success = true, data = hospital });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving hospital {HospitalId}", id);
+                return StatusCode(500, new { success = false, message = "Error retrieving hospital" });
+            }
+        }
+
+        [HttpPut("hospitals/{id}")]
+        public async Task<IActionResult> UpdateHospital(int id, [FromBody] UpdateHospitalRequest request)
+        {
+            try
+            {
+                var updateDto = new UpdateHospitalDto
+                {
+                    HospitalId = id,
+                    Name = request.Name,
+                    Description = request.Description,
+                    Location = request.Address,
+                    ContactNumber = request.Phone,
+                    Established = request.Established,
+                    Specialties = request.Specialties ?? new List<string>(),
+                    IsAvailable = request.IsAvailable,
+                    Latitude = request.Latitude,
+                    Longitude = request.Longitude,
+                    HasContract = request.HasContract,
+                    Rating = request.Rating,
+                    ImageUrl = request.ImageUrl,
+                    Thumbnail = request.ImageUrl,
+                    WebsiteUrl = request.WebsiteUrl
+                };
+
+                var result = await _hospitalService.UpdateHospitalAsync(updateDto);
+                
+                _logger.LogInformation("Hospital updated successfully: {HospitalId}", id);
+                return Ok(new { success = true, data = result, message = "Hospital updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating hospital {HospitalId}", id);
+                return StatusCode(500, new { success = false, message = "Error updating hospital" });
             }
         }
 
@@ -591,7 +644,8 @@ namespace ILLVentApp.Controllers
                     AcceptPrivateInsurance = request.AcceptPrivateInsurance,
                     HasContract = request.HasContract,
                     ImageUrl = request.ImageUrl,
-                    Thumbnail = request.ImageUrl // Use same image for thumbnail
+                    Thumbnail = request.ImageUrl,
+                    WebsiteUrl = request.WebsiteUrl
                 };
 
                 var result = await _pharmacyService.CreatePharmacyAsync(createPharmacyDto);
@@ -620,23 +674,71 @@ namespace ILLVentApp.Controllers
         {
             try
             {
-                _logger.LogInformation("Pharmacy deletion request received: {PharmacyId}", id);
-                
                 var result = await _pharmacyService.DeletePharmacyAsync(id);
-                
-                if (result)
-                {
-                    return Ok(new { success = true, message = "Pharmacy deleted successfully" });
-                }
-                else
+                if (!result)
                 {
                     return NotFound(new { success = false, message = "Pharmacy not found" });
                 }
+
+                _logger.LogInformation("Pharmacy deleted successfully: {PharmacyId}", id);
+                return Ok(new { success = true, message = "Pharmacy deleted successfully" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting pharmacy {PharmacyId}", id);
                 return StatusCode(500, new { success = false, message = "Error deleting pharmacy" });
+            }
+        }
+
+        [HttpGet("pharmacies/{id}")]
+        public async Task<IActionResult> GetPharmacy(int id)
+        {
+            try
+            {
+                var pharmacy = await _pharmacyService.GetPharmacyByIdAsync(id);
+                if (pharmacy == null)
+                {
+                    return NotFound(new { success = false, message = "Pharmacy not found" });
+                }
+                
+                return Ok(new { success = true, data = pharmacy });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving pharmacy {PharmacyId}", id);
+                return StatusCode(500, new { success = false, message = "Error retrieving pharmacy" });
+            }
+        }
+
+        [HttpPut("pharmacies/{id}")]
+        public async Task<IActionResult> UpdatePharmacy(int id, [FromBody] UpdatePharmacyRequest request)
+        {
+            try
+            {
+                var updateDto = new UpdatePharmacyDto
+                {
+                    PharmacyId = id,
+                    Name = request.Name,
+                    Description = request.Description,
+                    Location = request.Address,
+                    ContactNumber = request.Phone,
+                    Rating = request.Rating,
+                    AcceptPrivateInsurance = request.AcceptPrivateInsurance,
+                    HasContract = request.HasContract,
+                    ImageUrl = request.ImageUrl,
+                    Thumbnail = request.ImageUrl,
+                    WebsiteUrl = request.WebsiteUrl
+                };
+
+                var result = await _pharmacyService.UpdatePharmacyAsync(updateDto);
+                
+                _logger.LogInformation("Pharmacy updated successfully: {PharmacyId}", id);
+                return Ok(new { success = true, data = result, message = "Pharmacy updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating pharmacy {PharmacyId}", id);
+                return StatusCode(500, new { success = false, message = "Error updating pharmacy" });
             }
         }
 
@@ -698,11 +800,11 @@ namespace ILLVentApp.Controllers
 
     public class CreateHospitalRequest
     {
-        public string Name { get; set; }
+        public required string Name { get; set; }
         public string? Description { get; set; }
-        public string Address { get; set; }
-        public string Phone { get; set; }
-        public string Email { get; set; }
+        public required string Address { get; set; }
+        public required string Phone { get; set; }
+        public string? Email { get; set; }
         public string? Established { get; set; }
         public List<string>? Specialties { get; set; }
         public bool IsAvailable { get; set; } = true;
@@ -711,17 +813,50 @@ namespace ILLVentApp.Controllers
         public bool HasContract { get; set; } = false;
         public double Rating { get; set; } = 0.0;
         public string? ImageUrl { get; set; }
+        public string? WebsiteUrl { get; set; }
+    }
+
+    public class UpdateHospitalRequest
+    {
+        public required string Name { get; set; }
+        public string? Description { get; set; }
+        public required string Address { get; set; }
+        public required string Phone { get; set; }
+        public string? Email { get; set; }
+        public string? Established { get; set; }
+        public List<string>? Specialties { get; set; }
+        public bool IsAvailable { get; set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public bool HasContract { get; set; }
+        public double Rating { get; set; }
+        public string? ImageUrl { get; set; }
+        public string? WebsiteUrl { get; set; }
     }
 
     public class CreatePharmacyRequest
     {
-        public string Name { get; set; }
+        public required string Name { get; set; }
         public string? Description { get; set; }
-        public string Address { get; set; }
-        public string Phone { get; set; }
+        public required string Address { get; set; }
+        public required string Phone { get; set; }
         public double Rating { get; set; } = 0.0;
         public bool AcceptPrivateInsurance { get; set; } = false;
         public bool HasContract { get; set; } = false;
         public string? ImageUrl { get; set; }
+        public string? WebsiteUrl { get; set; }
+    }
+
+    public class UpdatePharmacyRequest
+    {
+        public required string Name { get; set; }
+        public string? Description { get; set; }
+        public required string Address { get; set; }
+        public required string Phone { get; set; }
+        public double Rating { get; set; }
+        public bool AcceptPrivateInsurance { get; set; }
+        public bool HasContract { get; set; }
+        public string? ImageUrl { get; set; }
+        public string? WebsiteUrl { get; set; }
     }
 } 
